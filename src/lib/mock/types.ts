@@ -44,6 +44,78 @@ export interface CurrentUser {
   initials: string;
 }
 
+/** The Settings "My profile" section's locally-editable copy of the current user. */
+export interface UserProfileSettings {
+  name: string;
+  email: string;
+  /** Read-only in Settings — role changes are not designed yet. */
+  role: string;
+  initials: string;
+}
+
+/**
+ * Notification concepts already established elsewhere in the product
+ * (Recent Activity, the Notification dropdown) — deliberately not one row
+ * per audit event.
+ */
+export type NotificationPreferenceKey =
+  | "newJobApplication"
+  | "newStaffRequest"
+  | "newCandidateRegistration"
+  | "newEnquiry"
+  | "assignedToMe"
+  | "importantStatusChanges";
+
+export interface NotificationPreferenceChannels {
+  inApp: boolean;
+  email: boolean;
+}
+
+export interface NotificationPreferenceDefinition {
+  key: NotificationPreferenceKey;
+  label: string;
+  description: string;
+}
+
+/**
+ * Frontend-only role vocabulary for the Team screen. Deliberately separate
+ * from any operational status type — this is not enforced anywhere yet and
+ * will be superseded by the real auth/RBAC role model.
+ */
+export type TeamRole = "Super Admin" | "Admin / Manager" | "Recruiter" | "Viewer";
+
+/**
+ * A team member's account state in Complex Admin itself — distinct from any
+ * operational status (job/application/etc). "Invited" and "Disabled" are
+ * mock presentation only; no invitation is actually sent and no account is
+ * actually deactivated.
+ */
+export type TeamMemberStatus = "Active" | "Invited" | "Disabled";
+
+/**
+ * An internal Complex Admin user. Deliberately separate from the operational
+ * `owner`/`assignee` strings used across Jobs/Applications/Staff Requests/
+ * Enquiries — `operationalOwnerAliases` is the mock-only bridge between the
+ * two until a real user_id links them.
+ */
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+  role: TeamRole;
+  status: TeamMemberStatus;
+  /** Display string, e.g. "Now", "12 min ago", "Not joined yet". */
+  lastActive: string;
+  /** ISO date, e.g. "2026-08-28" — null if not yet joined. */
+  joinedAt: string | null;
+  /** ISO date, e.g. "2026-09-18" — null if not currently invited. */
+  invitedAt: string | null;
+  isCurrentUser: boolean;
+  /** Raw owner/assignee strings this person is known by across the mock operational datasets. */
+  operationalOwnerAliases: string[];
+}
+
 export interface Metric {
   id: string;
   label: string;
@@ -118,12 +190,33 @@ export interface ActivityEvent {
   timestamp: string;
 }
 
-export interface AppNotification {
+/**
+ * An operational event that may require the user's attention — distinct
+ * from `ActivityEvent` (the full historical log, which includes many
+ * events nobody needs to be notified about) and from the future backend
+ * audit record. Deliberately not one type per Activity event.
+ */
+export type NotificationType =
+  | "new-application"
+  | "new-staff-request"
+  | "new-candidate"
+  | "new-enquiry"
+  | "assignment"
+  | "status-change";
+
+export interface Notification {
   id: string;
+  type: NotificationType;
   title: string;
-  description: string;
+  message: string;
   timestamp: string;
   read: boolean;
+  /** Mock-phase only — every notification currently belongs to "Moremi Molai". */
+  recipient: string;
+  entityType: ActivityEntityType;
+  /** Real mock record id, used to build the entity link. */
+  entityId: string;
+  entityReference: string;
 }
 
 export interface Job {
