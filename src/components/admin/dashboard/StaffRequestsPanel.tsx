@@ -16,12 +16,13 @@ export function StaffRequestsPanel() {
             <li key={request.id} className="flex flex-col gap-1.5 px-4 py-3.5">
               <div className="flex items-start justify-between gap-2">
                 <span className="text-sm font-medium text-fg">
-                  {request.employer}
+                  {request.client}
                 </span>
                 <StatusBadge status={request.status} />
               </div>
               <span className="text-xs text-fg-muted">
-                {request.request} &middot; {request.timeframe}
+                {request.quantityRequired} {request.requirementTitle}{" "}
+                &middot; {request.neededBy ?? "No date set"}
               </span>
               <span className="text-[11px] text-fg-muted">
                 Owner: {request.owner ?? "Unassigned"}

@@ -1,10 +1,11 @@
 import type {
   ApplicationStatus,
+  EnquiryStatus,
   JobStatus,
   StaffRequestStatus,
 } from "@/lib/mock/types";
 
-type Status = ApplicationStatus | StaffRequestStatus | JobStatus;
+type Status = ApplicationStatus | StaffRequestStatus | JobStatus | EnquiryStatus;
 
 const statusStyles: Record<Status, string> = {
   New: "bg-red-tint text-complex-red",
@@ -15,7 +16,13 @@ const statusStyles: Record<Status, string> = {
   Placed: "bg-chip-strong text-chip-strong-fg",
   Rejected: "bg-surface-secondary text-fg-muted",
   Withdrawn: "bg-surface-secondary text-fg-muted",
-  "In progress": "bg-surface-secondary text-fg",
+  Assigned: "bg-surface-secondary text-fg",
+  Sourcing: "border border-surface-secondary bg-elevated text-fg",
+  "Partially Filled": "border border-contrast bg-surface-secondary text-fg",
+  Filled: "bg-chip-strong text-chip-strong-fg",
+  "In Review": "border border-surface-secondary bg-elevated text-fg",
+  Responded: "border border-contrast bg-surface-secondary text-fg",
+  Converted: "bg-chip-strong text-chip-strong-fg",
   Open: "bg-chip-strong text-chip-strong-fg",
   Draft: "bg-surface-secondary text-fg-muted",
   Closed: "border border-surface-secondary bg-card text-fg-muted",

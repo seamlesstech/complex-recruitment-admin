@@ -21,7 +21,8 @@ export function RecentActivityPanel() {
                 <span className="text-sm text-fg">
                   <span className="font-medium">{event.actor}</span>{" "}
                   {event.action}{" "}
-                  <span className="font-medium">{event.target}</span>
+                  <span className="font-medium">{event.entityLabel}</span>
+                  {event.detail ? ` ${event.detail}` : ""}
                 </span>
                 <span className="text-xs text-fg-muted">
                   {event.timestamp}

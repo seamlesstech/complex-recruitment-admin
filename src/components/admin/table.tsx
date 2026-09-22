@@ -1,4 +1,9 @@
-import type { ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
+import type {
+  HTMLAttributes,
+  ReactNode,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from "react";
 
 export function Table({
   children,
@@ -44,9 +49,16 @@ export function TableBody({ children }: { children: ReactNode }) {
   return <tbody className="divide-y divide-surface-secondary">{children}</tbody>;
 }
 
-export function TableRow({ children }: { children: ReactNode }) {
+export function TableRow({
+  children,
+  className = "",
+  ...props
+}: HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className="transition-colors duration-150 hover:bg-hover">
+    <tr
+      className={`transition-colors duration-150 hover:bg-hover ${className}`}
+      {...props}
+    >
       {children}
     </tr>
   );

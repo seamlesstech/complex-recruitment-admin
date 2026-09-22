@@ -4,8 +4,8 @@ import type { MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { StatusBadge } from "@/components/admin/StatusBadge";
 import { OwnerDisplay } from "@/components/admin/OwnerDisplay";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import {
   Table,
   TableBody,
@@ -14,40 +14,33 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@/components/admin/table";
-import type { CandidateApplication } from "@/lib/mock/types";
+import type { Enquiry } from "@/lib/mock/types";
 
 /** Elements that should handle their own clicks instead of triggering row navigation. */
 const INTERACTIVE_SELECTOR = "a, button, input, select, textarea";
 
-export function ApplicationsTable({
-  applications,
-}: {
-  applications: CandidateApplication[];
-}) {
+export function EnquiriesTable({ enquiries }: { enquiries: Enquiry[] }) {
   const router = useRouter();
-
-  function openApplication(id: string) {
-    router.push(`/applications/${id}`);
-  }
 
   function handleRowClick(
     event: MouseEvent<HTMLTableRowElement>,
     id: string,
   ) {
-    // Let nested interactive elements (the candidate link today, any
-    // future in-row controls) handle their own click instead of double-firing.
+    // Let nested interactive elements (the contact link today, any future
+    // in-row controls) handle their own click instead of double-firing.
     if ((event.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
-    openApplication(id);
+    router.push(`/enquiries/${id}`);
   }
 
   return (
     <div className="rounded-lg border border-surface-secondary bg-card p-4">
-      <Table minWidthClassName="min-w-[840px]">
+      <Table minWidthClassName="min-w-[1040px]">
         <TableHead>
-          <TableHeaderCell>Candidate</TableHeaderCell>
-          <TableHeaderCell>Applied for</TableHeaderCell>
+          <TableHeaderCell>Contact</TableHeaderCell>
+          <TableHeaderCell>Enquiry</TableHeaderCell>
+          <TableHeaderCell>Type</TableHeaderCell>
           <TableHeaderCell className="whitespace-nowrap">
-            Applied
+            Received
           </TableHeaderCell>
           <TableHeaderCell>Owner</TableHeaderCell>
           <TableHeaderCell>Status</TableHeaderCell>
@@ -56,15 +49,15 @@ export function ApplicationsTable({
           </TableHeaderCell>
         </TableHead>
         <TableBody>
-          {applications.map((application) => (
+          {enquiries.map((enquiry) => (
             <TableRow
-              key={application.id}
-              onClick={(event) => handleRowClick(event, application.id)}
+              key={enquiry.id}
+              onClick={(event) => handleRowClick(event, enquiry.id)}
               className="group cursor-pointer"
             >
               <TableCell className="whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  {application.unread ? (
+                  {enquiry.unread ? (
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full bg-complex-red"
                       aria-hidden="true"
@@ -73,38 +66,41 @@ export function ApplicationsTable({
                     <span className="w-1.5 shrink-0" aria-hidden="true" />
                   )}
                   <Link
-                    href={`/applications/${application.id}`}
+                    href={`/enquiries/${enquiry.id}`}
                     className="flex flex-col rounded outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
                   >
                     <span
                       className={`text-fg group-hover:text-complex-red ${
-                        application.unread ? "font-semibold" : "font-medium"
+                        enquiry.unread ? "font-semibold" : "font-medium"
                       }`}
                     >
-                      {application.candidateName}
+                      {enquiry.contactName}
                     </span>
                     <span className="text-xs text-fg-muted">
-                      {application.reference}
+                      {enquiry.company ?? enquiry.reference}
                     </span>
                   </Link>
                 </div>
               </TableCell>
-              <TableCell className="whitespace-nowrap">
+              <TableCell className="max-w-xs">
                 <div className="flex flex-col">
-                  <span className="text-fg">{application.jobTitle}</span>
-                  <span className="text-xs text-fg-muted">
-                    {application.client}
+                  <span className="text-fg">{enquiry.subject}</span>
+                  <span className="truncate text-xs text-fg-muted">
+                    {enquiry.message}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="whitespace-nowrap text-fg-muted">
-                {application.appliedAt}
+                {enquiry.type}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-fg-muted">
+                {enquiry.receivedAt}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                <OwnerDisplay owner={application.owner} />
+                <OwnerDisplay owner={enquiry.owner} />
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                <StatusBadge status={application.status} />
+                <StatusBadge status={enquiry.status} />
               </TableCell>
               <TableCell className="whitespace-nowrap text-right">
                 <ChevronRight
