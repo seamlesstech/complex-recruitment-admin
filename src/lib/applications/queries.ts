@@ -2,8 +2,13 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityItem, DocumentRecord, NoteRecord } from "@/lib/mock/detail-shared";
 import type { ApplicationStatus, CandidateApplication } from "@/lib/mock/types";
-import { formatPayPreview } from "@/lib/mock/job-editor";
-import { editorEnumFieldsFromDb } from "@/lib/jobs/enums";
+import { editorEnumFieldsFromDb, formatPayForDisplay } from "@/lib/jobs/enums";
+import {
+  formatDateTime,
+  formatFileSize,
+  formatFullDate,
+  UUID_PATTERN,
+} from "@/lib/format";
 import { applicationStatusFromDb, applicationStatusToDb } from "./enums";
 import type {
   AddApplicationNoteResult,
@@ -32,37 +37,6 @@ import type {
  * and a client effect would be brittle and fire on every prefetch/refresh.
  * The indicator stays as-is until a deliberate read-state workflow exists.
  */
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function formatFullDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  const datePart = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  const timePart = date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `${datePart} · ${timePart}`;
-}
-
-function formatPounds(value: number | null): string {
-  return value === null ? "" : `£${value.toFixed(2)}`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${Math.round(kb)} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
-}
 
 const APPLICATIONS_LIST_SELECT = `
   id,
@@ -320,11 +294,6 @@ export async function getApplicationForDetail(id: string): Promise<ApplicationDe
   ]);
 
   const jobEnums = editorEnumFieldsFromDb(job);
-  const payPreview = formatPayPreview({
-    payType: jobEnums.payType,
-    payFrom: formatPounds(job.pay_from),
-    payTo: formatPounds(job.pay_to),
-  });
 
   return {
     application: {
@@ -357,7 +326,7 @@ export async function getApplicationForDetail(id: string): Promise<ApplicationDe
       jobLocation: job.location ?? "—",
       employmentType: jobEnums.employmentType || "Not specified",
       workPattern: job.work_pattern ? jobEnums.workPattern : "Not specified",
-      pay: job.pay_type ? payPreview : "Pay not yet specified",
+      pay: formatPayForDisplay(job.pay_type, job.pay_from, job.pay_to),
     },
     documents,
     notes,

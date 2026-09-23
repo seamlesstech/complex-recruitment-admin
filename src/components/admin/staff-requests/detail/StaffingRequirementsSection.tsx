@@ -1,6 +1,6 @@
 import { DetailCard } from "@/components/admin/detail/DetailCard";
 import { DetailField } from "@/components/admin/detail/DetailField";
-import type { RequirementDetails } from "@/lib/mock/staff-request-details";
+import type { StaffRequestRequirement } from "@/lib/staff-requests/types";
 import type { StaffRequest } from "@/lib/mock/types";
 
 export function StaffingRequirementsSection({
@@ -8,12 +8,12 @@ export function StaffingRequirementsSection({
   requirement,
 }: {
   request: StaffRequest;
-  requirement: RequirementDetails;
+  requirement: StaffRequestRequirement;
 }) {
   return (
     <DetailCard title="Staffing requirements">
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <DetailField label="Role">{requirement.role}</DetailField>
+        <DetailField label="Role">{request.requirementTitle}</DetailField>
         <DetailField label="Workers required">
           {request.quantityRequired}
         </DetailField>

@@ -1,6 +1,6 @@
 import { DetailCard } from "@/components/admin/detail/DetailCard";
 import { DetailField } from "@/components/admin/detail/DetailField";
-import type { ClientContact } from "@/lib/mock/staff-request-details";
+import type { StaffRequestContact } from "@/lib/staff-requests/types";
 import type { StaffRequest } from "@/lib/mock/types";
 
 const linkClass =
@@ -12,7 +12,8 @@ export function RequestOverviewSection({
   source,
 }: {
   request: StaffRequest;
-  clientContact: ClientContact;
+  /** null when the request has no employer_contact_id. */
+  clientContact: StaffRequestContact | null;
   source: string;
 }) {
   return (
@@ -40,22 +41,37 @@ export function RequestOverviewSection({
 
       <div className="flex flex-col gap-3 border-t border-surface-secondary pt-4">
         <span className="text-sm font-medium text-fg">Client contact</span>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DetailField label="Contact name">{clientContact.name}</DetailField>
-          <DetailField label="Email">
-            <a href={`mailto:${clientContact.email}`} className={linkClass}>
-              {clientContact.email}
-            </a>
-          </DetailField>
-          <DetailField label="Phone">
-            <a
-              href={`tel:${clientContact.phone.replace(/\s+/g, "")}`}
-              className={linkClass}
-            >
-              {clientContact.phone}
-            </a>
-          </DetailField>
-        </dl>
+        {clientContact ? (
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DetailField label="Contact name">{clientContact.name}</DetailField>
+            {clientContact.jobTitle ? (
+              <DetailField label="Job title">{clientContact.jobTitle}</DetailField>
+            ) : null}
+            <DetailField label="Email">
+              {clientContact.email ? (
+                <a href={`mailto:${clientContact.email}`} className={linkClass}>
+                  {clientContact.email}
+                </a>
+              ) : (
+                "—"
+              )}
+            </DetailField>
+            <DetailField label="Phone">
+              {clientContact.phone ? (
+                <a
+                  href={`tel:${clientContact.phone.replace(/\s+/g, "")}`}
+                  className={linkClass}
+                >
+                  {clientContact.phone}
+                </a>
+              ) : (
+                "—"
+              )}
+            </DetailField>
+          </dl>
+        ) : (
+          <p className="text-sm text-fg-muted">No contact provided.</p>
+        )}
       </div>
     </DetailCard>
   );

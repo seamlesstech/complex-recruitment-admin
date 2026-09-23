@@ -1,15 +1,12 @@
-import { Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { FormField } from "@/components/admin/forms/FormField";
 import { SelectInput } from "@/components/admin/forms/SelectInput";
-import { assignedRecruiterOptions } from "@/lib/mock/staff-request-details";
-import { staffRequestStatusFilterOptions } from "@/lib/mock/staff-requests";
+import {
+  staffRequestStatuses as statusOptions,
+  staffRequestUrgencies as urgencyOptions,
+} from "@/lib/staff-requests/enums";
+import type { OptionItem } from "@/lib/staff-requests/types";
 import type { StaffRequestStatus, StaffRequestUrgency } from "@/lib/mock/types";
-
-const statusOptions = staffRequestStatusFilterOptions.filter(
-  (option): option is StaffRequestStatus => option !== "All statuses",
-);
-
-const urgencyOptions: StaffRequestUrgency[] = ["Standard", "Urgent"];
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -23,8 +20,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 interface StaffRequestDetailSidebarProps {
   status: StaffRequestStatus;
   onStatusChange: (status: StaffRequestStatus) => void;
-  owner: string;
-  onOwnerChange: (owner: string) => void;
+  /** Real profile id, or "" for Unassigned. */
+  ownerId: string;
+  onOwnerChange: (ownerId: string) => void;
+  ownerOptions: OptionItem[];
   urgency: StaffRequestUrgency;
   onUrgencyChange: (urgency: StaffRequestUrgency) => void;
   reference: string;
@@ -33,14 +32,17 @@ interface StaffRequestDetailSidebarProps {
   quantityFilled: number;
   neededBy: string;
   showSaveFeedback: boolean;
+  saveError: string | null;
+  isSaving: boolean;
   onSave: () => void;
 }
 
 export function StaffRequestDetailSidebar({
   status,
   onStatusChange,
-  owner,
+  ownerId,
   onOwnerChange,
+  ownerOptions,
   urgency,
   onUrgencyChange,
   reference,
@@ -49,6 +51,8 @@ export function StaffRequestDetailSidebar({
   quantityFilled,
   neededBy,
   showSaveFeedback,
+  saveError,
+  isSaving,
   onSave,
 }: StaffRequestDetailSidebarProps) {
   const remaining = Math.max(quantityRequired - quantityFilled, 0);
@@ -75,12 +79,13 @@ export function StaffRequestDetailSidebar({
         <FormField label="Assigned recruiter" htmlFor="staff-request-owner">
           <SelectInput
             id="staff-request-owner"
-            value={owner}
+            value={ownerId}
             onChange={(event) => onOwnerChange(event.target.value)}
           >
-            {assignedRecruiterOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">Unassigned</option>
+            {ownerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
               </option>
             ))}
           </SelectInput>
@@ -118,19 +123,28 @@ export function StaffRequestDetailSidebar({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-surface-secondary pt-5">
-        {showSaveFeedback ? (
+        {saveError ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-red-line bg-red-tint px-3 py-2 text-xs font-medium text-complex-red"
+          >
+            <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{saveError}</span>
+          </div>
+        ) : showSaveFeedback ? (
           <div className="flex items-start gap-2 rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
             <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>Preview only — changes have not been persisted.</span>
+            <span>Changes saved.</span>
           </div>
         ) : null}
 
         <button
           type="button"
           onClick={onSave}
-          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          disabled={isSaving}
+          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Save changes
+          {isSaving ? "Saving…" : "Save changes"}
         </button>
       </div>
     </aside>

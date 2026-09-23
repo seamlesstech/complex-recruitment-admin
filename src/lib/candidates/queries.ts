@@ -133,6 +133,26 @@ export async function getCandidateCount(): Promise<number> {
   return count ?? 0;
 }
 
+/** Non-archived candidates registered since the start of the current month (server local time). */
+export async function getCandidatesRegisteredThisMonthCount(): Promise<number> {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("candidates")
+    .select("id", { count: "exact", head: true })
+    .is("archived_at", null)
+    .gte("registered_at", monthStart.toISOString());
+
+  if (error) {
+    console.error("getCandidatesRegisteredThisMonthCount failed:", error);
+    throw new Error("Could not load candidate count.");
+  }
+  return count ?? 0;
+}
+
 type ApplicationHistoryRow = {
   id: string;
   reference: string;

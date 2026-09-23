@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { StaffRequestDetailView } from "@/components/admin/staff-requests/detail/StaffRequestDetailView";
-import { getStaffRequestDetailById } from "@/lib/mock/staff-request-details";
+import { getStaffRequestForDetail } from "@/lib/staff-requests/queries";
+import { getOwnerOptions } from "@/lib/lookups/queries";
 
 export default async function StaffRequestDetailPage({
   params,
 }: PageProps<"/staff-requests/[id]">) {
   const { id } = await params;
-  const detail = getStaffRequestDetailById(id);
+
+  const [detail, ownerOptions] = await Promise.all([
+    getStaffRequestForDetail(id),
+    getOwnerOptions(),
+  ]);
 
   if (!detail) {
     return (
@@ -27,5 +32,5 @@ export default async function StaffRequestDetailPage({
     );
   }
 
-  return <StaffRequestDetailView detail={detail} />;
+  return <StaffRequestDetailView detail={detail} ownerOptions={ownerOptions} />;
 }

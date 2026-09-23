@@ -1,7 +1,9 @@
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { staffRequestStatusFilterOptions } from "@/lib/mock/staff-requests";
-import { jobOwnerFilterOptions, jobSectorFilterOptions } from "@/lib/mock/jobs";
+import { staffRequestStatuses } from "@/lib/staff-requests/enums";
+import type { OptionItem } from "@/lib/staff-requests/types";
+
+const staffRequestStatusFilterOptions = ["All statuses", ...staffRequestStatuses];
 
 interface StaffRequestsToolbarProps {
   search: string;
@@ -15,6 +17,11 @@ interface StaffRequestsToolbarProps {
   resultCount: number;
   hasActiveFilters: boolean;
   onReset: () => void;
+  /** Real active `profiles` — only `.name` is used (requests are filtered
+   * by the already-resolved owner name string, same as Candidates). */
+  ownerOptions: OptionItem[];
+  /** Real active `sectors` — filtered by resolved sector name. */
+  sectorOptions: OptionItem[];
 }
 
 export function StaffRequestsToolbar({
@@ -29,7 +36,20 @@ export function StaffRequestsToolbar({
   resultCount,
   hasActiveFilters,
   onReset,
+  ownerOptions,
+  sectorOptions,
 }: StaffRequestsToolbarProps) {
+  const jobOwnerFilterOptions = [
+    { label: "All owners", value: "All owners" },
+    ...ownerOptions.map((owner) => ({ label: owner.name, value: owner.name })),
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
+  const jobSectorFilterOptions = [
+    "All sectors",
+    ...sectorOptions.map((sector) => sector.name),
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">

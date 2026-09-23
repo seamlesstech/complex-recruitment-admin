@@ -126,6 +126,61 @@ export async function getJobs(): Promise<Job[]> {
   return (data as unknown as JobListRow[]).map(mapListRowToJob);
 }
 
+function localIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Dashboard Jobs summary: the count of non-archived Open jobs, plus the Open
+ * jobs whose closing date falls within the same CLOSING_SOON_WINDOW_DAYS
+ * window the Jobs list uses for its "closing soon" signal.
+ */
+export async function getOpenJobsSummary(): Promise<{
+  openCount: number;
+  closingSoon: { id: string; title: string; employer: string }[];
+}> {
+  const supabase = await createClient();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const windowEnd = new Date(today);
+  windowEnd.setDate(windowEnd.getDate() + CLOSING_SOON_WINDOW_DAYS);
+
+  const [openResult, closingResult] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open")
+      .is("archived_at", null),
+    supabase
+      .from("jobs")
+      .select("id, title, employer:employers!employer_id(name)")
+      .eq("status", "open")
+      .is("archived_at", null)
+      .gte("closing_date", localIsoDate(today))
+      .lte("closing_date", localIsoDate(windowEnd))
+      .order("closing_date", { ascending: true }),
+  ]);
+
+  const error = openResult.error ?? closingResult.error;
+  if (error) {
+    console.error("getOpenJobsSummary failed:", error);
+    throw new Error("Could not load job counts.");
+  }
+
+  return {
+    openCount: openResult.count ?? 0,
+    closingSoon: (closingResult.data ?? []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      employer: row.employer?.name ?? "—",
+    })),
+  };
+}
+
 export async function getEmployerOptions(): Promise<OptionItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

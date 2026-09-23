@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { DetailCard } from "@/components/admin/detail/DetailCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import type { Job } from "@/lib/mock/types";
+import type { RelatedJob } from "@/lib/staff-requests/types";
 
-export function RelatedJobsSection({ jobs }: { jobs: Job[] }) {
+export function RelatedJobsSection({ jobs }: { jobs: RelatedJob[] }) {
   return (
     <DetailCard title="Related jobs">
       {jobs.length > 0 ? (

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireActiveProfile } from "@/lib/auth/profile";
+import { UUID_PATTERN } from "@/lib/format";
 import { isApplicationStatus } from "./enums";
 import { addApplicationNote, updateApplicationStatusAndOwner } from "./queries";
 import type { AddApplicationNoteResult, ApplicationMutationResult } from "./types";
@@ -16,8 +17,6 @@ import type { AddApplicationNoteResult, ApplicationMutationResult } from "./type
  * Arguments arrive from the browser, so status/owner are validated here
  * before they reach the database — TypeScript types are not a runtime check.
  */
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function updateApplicationDetailAction(
   applicationId: string,

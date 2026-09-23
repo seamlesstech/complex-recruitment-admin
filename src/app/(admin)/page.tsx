@@ -5,36 +5,13 @@ import { AttentionList } from "@/components/admin/dashboard/AttentionList";
 import { RecentApplicationsPanel } from "@/components/admin/dashboard/RecentApplicationsPanel";
 import { StaffRequestsPanel } from "@/components/admin/dashboard/StaffRequestsPanel";
 import { RecentActivityPanel } from "@/components/admin/dashboard/RecentActivityPanel";
-import { getCandidateCount } from "@/lib/candidates/queries";
-import {
-  getNewApplicationCount,
-  getRecentApplications,
-} from "@/lib/applications/queries";
-import { dashboardMetrics } from "@/lib/mock/metrics";
+import { getDashboardData } from "@/lib/dashboard/queries";
 
 export default async function DashboardPage() {
-  // Candidates and Applications metrics are real; Open jobs / Staff
-  // Requests stay mock until their own Dashboard consolidation pass.
-  const [registeredCandidates, newApplications, recentApplications] =
-    await Promise.all([
-      getCandidateCount(),
-      getNewApplicationCount(),
-      getRecentApplications(),
-    ]);
-  const metrics = dashboardMetrics.map((metric) => {
-    if (metric.id === "registered-candidates") {
-      return { ...metric, value: registeredCandidates };
-    }
-    if (metric.id === "new-applications") {
-      return {
-        ...metric,
-        value: newApplications,
-        context: "Awaiting review",
-        needsAttention: newApplications > 0,
-      };
-    }
-    return metric;
-  });
+  // Every metric and panel below is live except Recent activity (the
+  // activity_events feed isn't generated yet) — see lib/dashboard/queries.ts.
+  const { metrics, attentionItems, recentApplications, recentStaffRequests } =
+    await getDashboardData();
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,14 +47,14 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <AttentionList />
+      <AttentionList items={attentionItems} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <RecentApplicationsPanel applications={recentApplications} />
         </div>
         <div className="flex flex-col gap-6">
-          <StaffRequestsPanel />
+          <StaffRequestsPanel requests={recentStaffRequests} />
           <RecentActivityPanel />
         </div>
       </div>

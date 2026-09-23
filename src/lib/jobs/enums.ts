@@ -5,6 +5,7 @@ import type {
   WorkPattern,
   WorkplaceType,
 } from "@/lib/mock/job-editor";
+import { formatPayPreview } from "@/lib/mock/job-editor";
 import type { JobStatus } from "@/lib/mock/types";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -13,8 +14,9 @@ import type { Database } from "@/lib/supabase/database.types";
  * salary", "Open") that intentionally differs from the database's enum
  * vocabulary ("on_site", "annual_salary", "open"). Rather than change the
  * UI (job-editor.ts, StatusBadge, etc.) to match the database, every
- * conversion lives here, at the one boundary between them — the Jobs data
- * layer (queries.ts) is the only thing that imports this file.
+ * conversion lives here, at the one boundary between them. Only server data
+ * layers import this file: jobs/queries.ts, plus the Applications and Staff
+ * Requests queries, which reuse the same employment/work-pattern/pay enums.
  */
 
 type DbWorkplaceType = Database["public"]["Enums"]["workplace_type"];
@@ -102,6 +104,25 @@ export function parsePayValue(raw: string): number | null {
 
 export function formatPayValueForEditor(value: number | null): string {
   return value === null ? "" : value.toFixed(2);
+}
+
+/**
+ * Read-only pay display from raw DB columns (shared by Application and Staff
+ * Request detail): "£11.50–£12.75 per hour", "Negotiable", or
+ * "Pay not yet specified" — never an invented figure.
+ */
+export function formatPayForDisplay(
+  payType: DbPayType | null,
+  payFrom: number | null,
+  payTo: number | null,
+): string {
+  if (!payType) return "Pay not yet specified";
+  const pounds = (value: number | null) => (value === null ? "" : `£${value.toFixed(2)}`);
+  return formatPayPreview({
+    payType: payTypeFromDb[payType],
+    payFrom: pounds(payFrom),
+    payTo: pounds(payTo),
+  });
 }
 
 /** `<input type="date">` uses "" for empty; the database column uses null. */

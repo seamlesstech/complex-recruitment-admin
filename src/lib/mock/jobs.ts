@@ -242,10 +242,3 @@ export const jobOwnerFilterOptions = [
   { label: "Shingi", value: "Shingi" },
   { label: "Unassigned", value: "Unassigned" },
 ] as const;
-
-export const jobSectorFilterOptions = [
-  "All sectors",
-  "Driving & Transport",
-  "Industrial & Warehouse",
-  "Construction",
-] as const;

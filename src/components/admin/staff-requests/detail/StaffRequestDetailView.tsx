@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { RequestOverviewSection } from "./RequestOverviewSection";
@@ -11,42 +12,73 @@ import { RelatedJobsSection } from "./RelatedJobsSection";
 import { NotesSection } from "@/components/admin/detail/NotesSection";
 import { ActivitySection } from "@/components/admin/detail/ActivitySection";
 import { StaffRequestDetailSidebar } from "./StaffRequestDetailSidebar";
-import { resolveOwnerDisplayName } from "@/lib/mock/candidate-identity";
-import type { StaffRequestDetail } from "@/lib/mock/staff-request-details";
+import {
+  addStaffRequestNoteAction,
+  updateStaffRequestDetailAction,
+} from "@/lib/staff-requests/actions";
+import type { OptionItem, StaffRequestDetailData } from "@/lib/staff-requests/types";
 import type { StaffRequestStatus, StaffRequestUrgency } from "@/lib/mock/types";
 
 export function StaffRequestDetailView({
   detail,
+  ownerOptions,
 }: {
-  detail: StaffRequestDetail;
+  detail: StaffRequestDetailData;
+  ownerOptions: OptionItem[];
 }) {
-  const { request, clientContact, requirement, relatedJobs, notes, activity } =
-    detail;
+  const router = useRouter();
+  const { request, contact, requirement, relatedJobs, notes, activity } = detail;
 
   const [status, setStatus] = useState<StaffRequestStatus>(request.status);
-  const [owner, setOwner] = useState(resolveOwnerDisplayName(request.owner));
+  const [ownerId, setOwnerId] = useState(detail.ownerId ?? "");
   const [urgency, setUrgency] = useState<StaffRequestUrgency>(
     request.urgency,
   );
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showSaveFeedback, setShowSaveFeedback] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  function clearFeedback() {
+    setShowSaveFeedback(false);
+    setSaveError(null);
+  }
 
   function handleStatusChange(next: StaffRequestStatus) {
     setStatus(next);
-    setShowSaveFeedback(false);
+    clearFeedback();
   }
 
   function handleOwnerChange(next: string) {
-    setOwner(next);
-    setShowSaveFeedback(false);
+    setOwnerId(next);
+    clearFeedback();
   }
 
   function handleUrgencyChange(next: StaffRequestUrgency) {
     setUrgency(next);
-    setShowSaveFeedback(false);
+    clearFeedback();
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    const result = await updateStaffRequestDetailAction(
+      request.id,
+      status,
+      ownerId || null,
+      urgency,
+    );
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
     setShowSaveFeedback(true);
+    router.refresh();
+  }
+
+  async function handleAddNote(text: string) {
+    return addStaffRequestNoteAction(request.id, text);
   }
 
   return (
@@ -65,8 +97,9 @@ export function StaffRequestDetailView({
             <h1 className="text-2xl font-semibold tracking-tight text-fg">
               {request.client}
             </h1>
-            <StatusBadge status={status} />
-            {urgency === "Urgent" ? (
+            {/* Header reflects persisted values; the rail holds the unsaved draft. */}
+            <StatusBadge status={request.status} />
+            {request.urgency === "Urgent" ? (
               <span className="flex items-center gap-1.5 text-sm font-medium text-complex-red">
                 <span
                   className="h-1.5 w-1.5 rounded-full bg-complex-red"
@@ -90,7 +123,7 @@ export function StaffRequestDetailView({
         <div className="flex flex-col gap-6">
           <RequestOverviewSection
             request={request}
-            clientContact={clientContact}
+            clientContact={contact}
             source={requirement.source}
           />
           <StaffingRequirementsSection
@@ -99,15 +132,20 @@ export function StaffRequestDetailView({
           />
           <FulfilmentSection request={request} />
           <RelatedJobsSection jobs={relatedJobs} />
-          <NotesSection entityId={request.id} initialNotes={notes} />
+          <NotesSection
+            entityId={request.id}
+            initialNotes={notes}
+            onAddNote={handleAddNote}
+          />
           <ActivitySection activity={activity} />
         </div>
 
         <StaffRequestDetailSidebar
           status={status}
           onStatusChange={handleStatusChange}
-          owner={owner}
+          ownerId={ownerId}
           onOwnerChange={handleOwnerChange}
+          ownerOptions={ownerOptions}
           urgency={urgency}
           onUrgencyChange={handleUrgencyChange}
           reference={request.reference}
@@ -116,6 +154,8 @@ export function StaffRequestDetailView({
           quantityFilled={request.quantityFilled}
           neededBy={request.neededBy ?? "No date set"}
           showSaveFeedback={showSaveFeedback}
+          saveError={saveError}
+          isSaving={isSaving}
           onSave={handleSave}
         />
       </div>

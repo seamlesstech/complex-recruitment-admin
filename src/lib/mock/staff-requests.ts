@@ -1,5 +1,15 @@
 import type { StaffRequest } from "./types";
 
+/**
+ * Still-mock Staff Requests dataset. /staff-requests, /staff-requests/[id]
+ * and the Dashboard are now live (src/lib/staff-requests) and no longer read
+ * this. It is retained ONLY for unmigrated consumers:
+ *   - mock/team.ts — Team workload counts (until the Team consolidation pass)
+ *   - mock/enquiry-details.ts — Enquiry Detail's related-Staff-Request
+ *     cross-reference (until Enquiries migrate)
+ * Delete once both are migrated.
+ */
+
 export const staffRequests: StaffRequest[] = [
   {
     id: "sr-0128",
@@ -242,29 +252,3 @@ export const staffRequests: StaffRequest[] = [
     submittedAt: "15 Sept · 08:30",
   },
 ];
-
-/** A short preview for the Dashboard's "Recent staff requests" panel. */
-export const recentStaffRequests: StaffRequest[] = staffRequests.slice(0, 2);
-
-export const staffRequestStatusFilterOptions = [
-  "All statuses",
-  "New",
-  "Assigned",
-  "Sourcing",
-  "Partially Filled",
-  "Filled",
-  "Closed",
-] as const;
-
-export const staffRequestSummaryDisplayCounts = (() => {
-  const all = staffRequests.length;
-  return {
-    all,
-    new: staffRequests.filter((r) => r.status === "New").length,
-    sourcing: staffRequests.filter((r) => r.status === "Sourcing").length,
-    partiallyFilled: staffRequests.filter(
-      (r) => r.status === "Partially Filled",
-    ).length,
-    filled: staffRequests.filter((r) => r.status === "Filled").length,
-  };
-})();
