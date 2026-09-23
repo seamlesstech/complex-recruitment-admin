@@ -18,6 +18,8 @@ import {
 } from "./enums";
 import type { CreateEmployerResult, JobEditorData, JobEditorResult, OptionItem } from "./types";
 
+export { getOwnerOptions, getSectorOptions } from "@/lib/lookups/queries";
+
 /**
  * The reusable Supabase operational-data pattern this module establishes
  * (to be repeated for Candidates, Applications, Staff Requests, Enquiries):
@@ -124,21 +126,6 @@ export async function getJobs(): Promise<Job[]> {
   return (data as unknown as JobListRow[]).map(mapListRowToJob);
 }
 
-export async function getSectorOptions(): Promise<OptionItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("sectors")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    console.error("getSectorOptions failed:", error);
-    throw new Error("Could not load sectors.");
-  }
-  return data;
-}
-
 export async function getEmployerOptions(): Promise<OptionItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -152,21 +139,6 @@ export async function getEmployerOptions(): Promise<OptionItem[]> {
     throw new Error("Could not load employers.");
   }
   return data;
-}
-
-export async function getOwnerOptions(): Promise<OptionItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .eq("status", "active")
-    .order("display_name");
-
-  if (error) {
-    console.error("getOwnerOptions failed:", error);
-    throw new Error("Could not load team members.");
-  }
-  return data.map((row) => ({ id: row.id, name: row.display_name }));
 }
 
 type JobEditRow = {

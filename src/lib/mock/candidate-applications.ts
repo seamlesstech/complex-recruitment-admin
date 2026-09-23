@@ -1,5 +1,15 @@
 import type { CandidateApplication } from "./types";
 
+/**
+ * Still-mock Applications dataset. /applications and /applications/[id] are
+ * now live (src/lib/applications) and no longer read this. It is retained
+ * ONLY for unmigrated consumers:
+ *   - mock/team.ts — Team workload counts (until the Team consolidation pass)
+ *   - mock/candidates.ts — the mock Candidate list behind Enquiry Detail's
+ *     converted-Candidate cross-reference (until Enquiries migrate)
+ * Delete once both are migrated.
+ */
+
 export const candidateApplications: CandidateApplication[] = [
   {
     id: "capp-1067",
@@ -282,51 +292,3 @@ export const candidateApplications: CandidateApplication[] = [
     unread: false,
   },
 ];
-
-export const applicationStatusFilterOptions = [
-  "All statuses",
-  "New",
-  "Reviewing",
-  "Shortlisted",
-  "Interview",
-  "Offered",
-  "Placed",
-  "Rejected",
-  "Withdrawn",
-] as const;
-
-export interface ApplicationJobFilterOption {
-  id: string;
-  label: string;
-}
-
-export const applicationJobFilterOptions: ApplicationJobFilterOption[] = (
-  () => {
-    const seen = new Map<string, ApplicationJobFilterOption>();
-    for (const application of candidateApplications) {
-      if (!seen.has(application.jobId)) {
-        seen.set(application.jobId, {
-          id: application.jobId,
-          label: `${application.jobTitle} — ${application.client}`,
-        });
-      }
-    }
-    return Array.from(seen.values());
-  }
-)();
-
-export const applicationSummaryDisplayCounts = (() => {
-  const all = candidateApplications.length;
-  const counts = {
-    all,
-    new: candidateApplications.filter((a) => a.status === "New").length,
-    reviewing: candidateApplications.filter((a) => a.status === "Reviewing")
-      .length,
-    shortlisted: candidateApplications.filter((a) => a.status === "Shortlisted")
-      .length,
-    interview: candidateApplications.filter((a) => a.status === "Interview")
-      .length,
-    placed: candidateApplications.filter((a) => a.status === "Placed").length,
-  };
-  return counts;
-})();

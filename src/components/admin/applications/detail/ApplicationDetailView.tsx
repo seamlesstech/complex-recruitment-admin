@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CandidateSection } from "./CandidateSection";
@@ -11,32 +12,60 @@ import { NotesSection } from "@/components/admin/detail/NotesSection";
 import { ActivitySection } from "@/components/admin/detail/ActivitySection";
 import { ApplicationDetailSidebar } from "./ApplicationDetailSidebar";
 import {
-  applicationSourceShort,
-  type ApplicationDetail,
-} from "@/lib/mock/application-details";
-import { resolveOwnerDisplayName } from "@/lib/mock/candidate-identity";
+  addApplicationNoteAction,
+  updateApplicationDetailAction,
+} from "@/lib/applications/actions";
+import type { ApplicationDetailData, OptionItem } from "@/lib/applications/types";
 import type { ApplicationStatus } from "@/lib/mock/types";
 
-export function ApplicationDetailView({ detail }: { detail: ApplicationDetail }) {
-  const { application, job, candidate, vacancy, documents, notes, activity } =
-    detail;
+export function ApplicationDetailView({
+  detail,
+  ownerOptions,
+}: {
+  detail: ApplicationDetailData;
+  ownerOptions: OptionItem[];
+}) {
+  const router = useRouter();
+  const { application, candidate, vacancy, documents, notes, activity } = detail;
 
   const [status, setStatus] = useState<ApplicationStatus>(application.status);
-  const [owner, setOwner] = useState(resolveOwnerDisplayName(application.owner));
+  const [ownerId, setOwnerId] = useState(detail.ownerId ?? "");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showSaveFeedback, setShowSaveFeedback] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   function handleStatusChange(nextStatus: ApplicationStatus) {
     setStatus(nextStatus);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
-  function handleOwnerChange(nextOwner: string) {
-    setOwner(nextOwner);
+  function handleOwnerChange(nextOwnerId: string) {
+    setOwnerId(nextOwnerId);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    const result = await updateApplicationDetailAction(
+      application.id,
+      status,
+      ownerId || null,
+    );
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
     setShowSaveFeedback(true);
+    router.refresh();
+  }
+
+  async function handleAddNote(text: string) {
+    return addApplicationNoteAction(application.id, text);
   }
 
   return (
@@ -55,37 +84,49 @@ export function ApplicationDetailView({ detail }: { detail: ApplicationDetail })
             <h1 className="text-2xl font-semibold tracking-tight text-fg">
               {application.candidateName}
             </h1>
-            <StatusBadge status={status} />
+            {/* The badge shows the persisted status; the rail's select is the unsaved draft. */}
+            <StatusBadge status={application.status} />
           </div>
           <p className="text-sm text-fg-muted">
             {application.reference} · {application.jobTitle}
           </p>
           <p className="text-sm text-fg-muted">
-            Applied {application.appliedAt}
+            Applied {detail.submittedLabel}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          <CandidateSection application={application} candidate={candidate} />
-          <ApplicationSection application={application} job={job} vacancy={vacancy} />
+          <CandidateSection candidate={candidate} />
+          <ApplicationSection
+            application={application}
+            vacancy={vacancy}
+            source={detail.source}
+          />
           <DocumentsSection documents={documents} />
-          <NotesSection entityId={application.id} initialNotes={notes} />
+          <NotesSection
+            entityId={application.id}
+            initialNotes={notes}
+            onAddNote={handleAddNote}
+          />
           <ActivitySection activity={activity} />
         </div>
 
         <ApplicationDetailSidebar
           status={status}
           onStatusChange={handleStatusChange}
-          owner={owner}
+          ownerId={ownerId}
           onOwnerChange={handleOwnerChange}
+          ownerOptions={ownerOptions}
           applicationReference={application.reference}
           appliedAt={application.appliedAt}
-          source={applicationSourceShort}
+          source={detail.source}
           jobReference={application.jobReference}
           candidateReference={candidate.reference}
           showSaveFeedback={showSaveFeedback}
+          saveError={saveError}
+          isSaving={isSaving}
           onSave={handleSave}
         />
       </div>

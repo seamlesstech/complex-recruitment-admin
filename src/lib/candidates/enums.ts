@@ -1,4 +1,4 @@
-import type { ApplicationStatus, CandidateAvailability } from "@/lib/mock/types";
+import type { CandidateAvailability } from "@/lib/mock/types";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
@@ -21,24 +21,4 @@ export const availabilityFromDb: Record<DbAvailability, CandidateAvailability> =
   working: "Working",
   unavailable: "Unavailable",
   inactive: "Inactive",
-};
-
-/**
- * Deliberately separate from any future Applications enum boundary — this
- * exists only so Candidate Detail's read-only "Applications" history table
- * can render the existing shared StatusBadge, which already expects this
- * exact Title Case union. It is not a general Applications data-access
- * layer; that comes in the next migration.
- */
-type DbApplicationStatus = Database["public"]["Enums"]["application_status"];
-
-export const applicationStatusFromDb: Record<DbApplicationStatus, ApplicationStatus> = {
-  new: "New",
-  reviewing: "Reviewing",
-  shortlisted: "Shortlisted",
-  interview: "Interview",
-  offered: "Offered",
-  placed: "Placed",
-  rejected: "Rejected",
-  withdrawn: "Withdrawn",
 };

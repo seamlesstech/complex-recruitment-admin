@@ -118,7 +118,9 @@ export function formatDateDisplay(isoDate: string): string {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-export function formatPayPreview(draft: JobDraft): string {
+export function formatPayPreview(
+  draft: Pick<JobDraft, "payType" | "payFrom" | "payTo">,
+): string {
   if (draft.payType === "Negotiable") {
     return "Negotiable";
   }

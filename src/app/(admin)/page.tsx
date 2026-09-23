@@ -6,18 +6,35 @@ import { RecentApplicationsPanel } from "@/components/admin/dashboard/RecentAppl
 import { StaffRequestsPanel } from "@/components/admin/dashboard/StaffRequestsPanel";
 import { RecentActivityPanel } from "@/components/admin/dashboard/RecentActivityPanel";
 import { getCandidateCount } from "@/lib/candidates/queries";
+import {
+  getNewApplicationCount,
+  getRecentApplications,
+} from "@/lib/applications/queries";
 import { dashboardMetrics } from "@/lib/mock/metrics";
 
 export default async function DashboardPage() {
-  // Only the Candidates metric is real for now — Jobs/Applications/Staff
-  // Requests stay mock until their own Dashboard consolidation pass, to
-  // avoid a half-migrated, confusing metrics row.
-  const registeredCandidates = await getCandidateCount();
-  const metrics = dashboardMetrics.map((metric) =>
-    metric.id === "registered-candidates"
-      ? { ...metric, value: registeredCandidates }
-      : metric,
-  );
+  // Candidates and Applications metrics are real; Open jobs / Staff
+  // Requests stay mock until their own Dashboard consolidation pass.
+  const [registeredCandidates, newApplications, recentApplications] =
+    await Promise.all([
+      getCandidateCount(),
+      getNewApplicationCount(),
+      getRecentApplications(),
+    ]);
+  const metrics = dashboardMetrics.map((metric) => {
+    if (metric.id === "registered-candidates") {
+      return { ...metric, value: registeredCandidates };
+    }
+    if (metric.id === "new-applications") {
+      return {
+        ...metric,
+        value: newApplications,
+        context: "Awaiting review",
+        needsAttention: newApplications > 0,
+      };
+    }
+    return metric;
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,7 +74,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <RecentApplicationsPanel />
+          <RecentApplicationsPanel applications={recentApplications} />
         </div>
         <div className="flex flex-col gap-6">
           <StaffRequestsPanel />

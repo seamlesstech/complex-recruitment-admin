@@ -1,10 +1,9 @@
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { jobOwnerFilterOptions } from "@/lib/mock/jobs";
-import {
-  applicationJobFilterOptions,
-  applicationStatusFilterOptions,
-} from "@/lib/mock/candidate-applications";
+import { applicationStatuses } from "@/lib/applications/enums";
+import type { ApplicationJobOption, OptionItem } from "@/lib/applications/types";
+
+const applicationStatusFilterOptions = ["All statuses", ...applicationStatuses];
 
 interface ApplicationsToolbarProps {
   search: string;
@@ -18,6 +17,11 @@ interface ApplicationsToolbarProps {
   resultCount: number;
   hasActiveFilters: boolean;
   onReset: () => void;
+  /** Real active `profiles` — only `.name` is used (Applications are filtered
+   * by the already-resolved owner name string, same as Candidates). */
+  ownerOptions: OptionItem[];
+  /** Jobs present in the live application set; filtered by real job id. */
+  jobOptions: ApplicationJobOption[];
 }
 
 export function ApplicationsToolbar({
@@ -32,7 +36,15 @@ export function ApplicationsToolbar({
   resultCount,
   hasActiveFilters,
   onReset,
+  ownerOptions,
+  jobOptions,
 }: ApplicationsToolbarProps) {
+  const ownerFilterOptions = [
+    { label: "All owners", value: "All owners" },
+    ...ownerOptions.map((owner) => ({ label: owner.name, value: owner.name })),
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">
@@ -59,7 +71,7 @@ export function ApplicationsToolbar({
       </FilterSelect>
 
       <FilterSelect value={ownerValue} onChange={onOwnerChange} label="Owner">
-        {jobOwnerFilterOptions.map((option) => (
+        {ownerFilterOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -68,7 +80,7 @@ export function ApplicationsToolbar({
 
       <FilterSelect value={jobValue} onChange={onJobChange} label="Job">
         <option value="All jobs">All jobs</option>
-        {applicationJobFilterOptions.map((option) => (
+        {jobOptions.map((option) => (
           <option key={option.id} value={option.id}>
             {option.label}
           </option>

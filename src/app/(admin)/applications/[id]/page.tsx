@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { ApplicationDetailView } from "@/components/admin/applications/detail/ApplicationDetailView";
-import { getApplicationDetailById } from "@/lib/mock/application-details";
+import { getApplicationForDetail } from "@/lib/applications/queries";
+import { getOwnerOptions } from "@/lib/lookups/queries";
 
 export default async function ApplicationDetailPage({
   params,
 }: PageProps<"/applications/[id]">) {
   const { id } = await params;
-  const detail = getApplicationDetailById(id);
+
+  const [detail, ownerOptions] = await Promise.all([
+    getApplicationForDetail(id),
+    getOwnerOptions(),
+  ]);
 
   if (!detail) {
     return (
@@ -25,5 +30,5 @@ export default async function ApplicationDetailPage({
     );
   }
 
-  return <ApplicationDetailView detail={detail} />;
+  return <ApplicationDetailView detail={detail} ownerOptions={ownerOptions} />;
 }

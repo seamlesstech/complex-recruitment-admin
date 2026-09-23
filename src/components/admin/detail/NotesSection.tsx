@@ -13,9 +13,9 @@ interface NotesSectionProps {
   /**
    * When provided, notes are persisted for real (author comes from the
    * server's own authenticated session — never trusted from here) and the
-   * "preview only" caption is replaced with truthful copy. Omitted by every
-   * still-mock detail screen (Applications/Enquiries/Staff Requests), which
-   * keeps the original local-only behaviour unchanged.
+   * "preview only" caption is replaced with truthful copy. Candidates and
+   * Applications pass it; still-mock detail screens (Enquiries/Staff
+   * Requests) omit it and keep the original local-only behaviour.
    */
   onAddNote?: (text: string) => Promise<{ ok: true; note: NoteRecord } | { ok: false; error: string }>;
 }

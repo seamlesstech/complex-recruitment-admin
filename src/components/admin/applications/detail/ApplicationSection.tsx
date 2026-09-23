@@ -1,22 +1,22 @@
 import { DetailCard } from "@/components/admin/detail/DetailCard";
 import { DetailField } from "@/components/admin/detail/DetailField";
-import type { CandidateApplication, Job } from "@/lib/mock/types";
-import type { VacancyDetail } from "@/lib/mock/application-details";
+import type { ApplicationVacancy } from "@/lib/applications/types";
+import type { CandidateApplication } from "@/lib/mock/types";
 
 export function ApplicationSection({
   application,
-  job,
   vacancy,
+  source,
 }: {
   application: CandidateApplication;
-  job: Job | null;
-  vacancy: VacancyDetail;
+  vacancy: ApplicationVacancy;
+  source: string;
 }) {
   return (
     <DetailCard
       title="Application"
-      actionLabel={job ? "Open job" : undefined}
-      actionHref={job ? `/jobs/${job.id}/edit` : undefined}
+      actionLabel="Open job"
+      actionHref={`/jobs/${vacancy.jobId}/edit`}
     >
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <DetailField label="Job title">{application.jobTitle}</DetailField>
@@ -29,7 +29,7 @@ export function ApplicationSection({
           {application.reference}
         </DetailField>
         <DetailField label="Applied">{application.appliedAt}</DetailField>
-        <DetailField label="Source">{vacancy.source}</DetailField>
+        <DetailField label="Source">{source}</DetailField>
         <DetailField label="Employment type">
           {vacancy.employmentType}
         </DetailField>

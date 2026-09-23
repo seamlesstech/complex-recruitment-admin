@@ -3,12 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import type { NoteRecord } from "@/lib/mock/detail-shared";
 import type { Candidate, CandidateApplication } from "@/lib/mock/types";
-import {
-  applicationStatusFromDb,
-  availabilityFromDb,
-  availabilityToDb,
-} from "./enums";
-import type { CandidateDetailData, CreateCandidateResult, OptionItem } from "./types";
+import { applicationStatusFromDb } from "@/lib/applications/enums";
+import { availabilityFromDb, availabilityToDb } from "./enums";
+import type { CandidateDetailData, CreateCandidateResult } from "./types";
+
+export { getOwnerOptions, getSectorOptions } from "@/lib/lookups/queries";
 
 /**
  * Same reusable pattern established in src/lib/jobs/queries.ts:
@@ -17,10 +16,9 @@ import type { CandidateDetailData, CreateCandidateResult, OptionItem } from "./t
  *   - Functions return/accept UI-vocabulary shapes (Candidate, NoteRecord);
  *     the DB-enum <-> UI-label conversion is fully contained in ./enums.
  *
- * getSectorOptions()/getOwnerOptions() are intentionally duplicated from
- * jobs/queries.ts rather than imported — small, domain-specific queries,
- * consistent with "no shared repository framework." Worth extracting into
- * a shared lookups module once a third domain needs the same two queries.
+ * getSectorOptions()/getOwnerOptions() now live in lib/lookups/queries.ts
+ * (extracted when Applications became the third domain needing them) and
+ * are re-exported above so existing import sites are unchanged.
  */
 
 function formatLastActivity(iso: string | null): string {
@@ -40,36 +38,6 @@ function formatFullDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
-export async function getSectorOptions(): Promise<OptionItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("sectors")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    console.error("getSectorOptions failed:", error);
-    throw new Error("Could not load sectors.");
-  }
-  return data;
-}
-
-export async function getOwnerOptions(): Promise<OptionItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .eq("status", "active")
-    .order("display_name");
-
-  if (error) {
-    console.error("getOwnerOptions failed:", error);
-    throw new Error("Could not load team members.");
-  }
-  return data.map((row) => ({ id: row.id, name: row.display_name }));
 }
 
 const CANDIDATES_LIST_SELECT = `
