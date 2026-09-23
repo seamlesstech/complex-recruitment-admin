@@ -12,7 +12,8 @@ import {
   managementNavItems,
   type NavItem,
 } from "./nav-config";
-import { currentUser } from "@/lib/mock/user";
+import { useCurrentUser } from "./CurrentUserProvider";
+import { signOutAction } from "@/lib/auth/actions";
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -78,6 +79,7 @@ function NavSection({
 export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
+  const { displayName, initials, roleLabel } = useCurrentUser();
 
   return (
     <>
@@ -125,18 +127,21 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         <div className="relative border-t border-white/10 p-3">
           {accountOpen ? (
             <div className="absolute inset-x-3 bottom-[calc(100%+4px)] overflow-hidden rounded-md border border-white/10 bg-sidebar shadow-lg">
-              <button
-                type="button"
-                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+              <Link
+                href="/settings"
+                onClick={() => setAccountOpen(false)}
+                className="block w-full px-3 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
               >
                 Profile settings
-              </button>
-              <button
-                type="button"
-                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                Sign out
-              </button>
+              </Link>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="w-full px-3 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
           ) : null}
           <button
@@ -145,13 +150,13 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             aria-expanded={accountOpen}
             className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors duration-150 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
           >
-            <Avatar initials={currentUser.initials} size="sm" />
+            <Avatar initials={initials} size="sm" />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium text-white">
-                {currentUser.name}
+                {displayName}
               </span>
               <span className="truncate text-xs text-white/50">
-                {currentUser.role}
+                {roleLabel}
               </span>
             </span>
             <ChevronUp

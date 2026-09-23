@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import { AdminShell } from "@/components/admin/AdminShell";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -28,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full">
-        <AdminShell>{children}</AdminShell>
+        {children}
         <Script
           id="theme-init"
           strategy="beforeInteractive"

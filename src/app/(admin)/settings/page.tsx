@@ -5,10 +5,8 @@ import { AppearanceSection } from "@/components/admin/settings/AppearanceSection
 import { NotificationsSection } from "@/components/admin/settings/NotificationsSection";
 import { ProfileSection } from "@/components/admin/settings/ProfileSection";
 import { SettingsNav, type SettingsSection } from "@/components/admin/settings/SettingsNav";
-import {
-  initialNotificationPreferences,
-  initialProfileSettings,
-} from "@/lib/mock/settings";
+import { useCurrentUser } from "@/components/admin/CurrentUserProvider";
+import { initialNotificationPreferences } from "@/lib/mock/settings";
 import type {
   NotificationPreferenceChannels,
   NotificationPreferenceKey,
@@ -16,11 +14,15 @@ import type {
 } from "@/lib/mock/types";
 
 export default function SettingsPage() {
+  const currentUser = useCurrentUser();
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
 
-  const [profile, setProfile] = useState<UserProfileSettings>(
-    initialProfileSettings,
-  );
+  const [profile, setProfile] = useState<UserProfileSettings>(() => ({
+    name: currentUser.displayName,
+    email: currentUser.email,
+    role: currentUser.roleLabel,
+    initials: currentUser.initials,
+  }));
   const [profileSaved, setProfileSaved] = useState(false);
 
   const [preferences, setPreferences] = useState<

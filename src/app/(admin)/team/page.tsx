@@ -8,6 +8,7 @@ import {
 import { EmptyState } from "@/components/admin/EmptyState";
 import { TeamToolbar } from "@/components/admin/team/TeamToolbar";
 import { TeamTable } from "@/components/admin/team/TeamTable";
+import { useCurrentUser } from "@/components/admin/CurrentUserProvider";
 import { teamMembers, teamSummaryDisplayCounts } from "@/lib/mock/team";
 import type { TeamMemberStatus } from "@/lib/mock/types";
 
@@ -17,6 +18,7 @@ const DEFAULT_STATUS_SELECT = "All statuses";
 const DEFAULT_ROLE = "All roles";
 
 export default function TeamPage() {
+  const { email: currentUserEmail } = useCurrentUser();
   const [statusFilter, setStatusFilter] = useState<TeamStatusFilter>("All");
   const [roleFilter, setRoleFilter] = useState(DEFAULT_ROLE);
   const [search, setSearch] = useState("");
@@ -104,7 +106,7 @@ export default function TeamPage() {
       />
 
       {filteredMembers.length > 0 ? (
-        <TeamTable members={filteredMembers} />
+        <TeamTable members={filteredMembers} currentUserEmail={currentUserEmail} />
       ) : (
         <EmptyState
           title="No team members found"

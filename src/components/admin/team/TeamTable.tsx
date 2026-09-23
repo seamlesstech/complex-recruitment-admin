@@ -59,7 +59,19 @@ function WorkloadCell({ member }: { member: TeamMember }) {
   );
 }
 
-export function TeamTable({ members }: { members: TeamMember[] }) {
+export function TeamTable({
+  members,
+  currentUserEmail,
+}: {
+  members: TeamMember[];
+  /**
+   * The real authenticated profile's email — the mock dataset's own
+   * `isCurrentUser` flag is a static seed value and would silently go stale
+   * the moment a different real account logs in, so "You" is computed here
+   * against the live session instead of trusted from the mock record.
+   */
+  currentUserEmail: string;
+}) {
   return (
     <div className="rounded-lg border border-surface-secondary bg-card p-4">
       <Table minWidthClassName="min-w-[840px]">
@@ -81,7 +93,8 @@ export function TeamTable({ members }: { members: TeamMember[] }) {
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5 font-medium text-fg">
                       {member.name}
-                      {member.isCurrentUser ? (
+                      {member.email.toLowerCase() ===
+                      currentUserEmail.toLowerCase() ? (
                         <span className="text-xs font-normal text-fg-muted">
                           · You
                         </span>

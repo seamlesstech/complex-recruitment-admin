@@ -5,9 +5,20 @@ import { AttentionList } from "@/components/admin/dashboard/AttentionList";
 import { RecentApplicationsPanel } from "@/components/admin/dashboard/RecentApplicationsPanel";
 import { StaffRequestsPanel } from "@/components/admin/dashboard/StaffRequestsPanel";
 import { RecentActivityPanel } from "@/components/admin/dashboard/RecentActivityPanel";
+import { getCandidateCount } from "@/lib/candidates/queries";
 import { dashboardMetrics } from "@/lib/mock/metrics";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Only the Candidates metric is real for now — Jobs/Applications/Staff
+  // Requests stay mock until their own Dashboard consolidation pass, to
+  // avoid a half-migrated, confusing metrics row.
+  const registeredCandidates = await getCandidateCount();
+  const metrics = dashboardMetrics.map((metric) =>
+    metric.id === "registered-candidates"
+      ? { ...metric, value: registeredCandidates }
+      : metric,
+  );
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -30,7 +41,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {dashboardMetrics.map((metric) => (
+        {metrics.map((metric) => (
           <MetricCard
             key={metric.id}
             label={metric.label}

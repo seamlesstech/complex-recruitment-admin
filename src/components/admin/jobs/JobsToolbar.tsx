@@ -1,10 +1,8 @@
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import {
-  jobOwnerFilterOptions,
-  jobSectorFilterOptions,
-  jobStatusFilterOptions,
-} from "@/lib/mock/jobs";
+import type { OptionItem } from "@/lib/jobs/types";
+
+const jobStatusFilterOptions = ["All statuses", "Open", "Draft", "Closed"] as const;
 
 interface JobsToolbarProps {
   search: string;
@@ -17,6 +15,11 @@ interface JobsToolbarProps {
   onSectorChange: (value: string) => void;
   resultCount: number;
   onReset: () => void;
+  /** Real `sectors` rows — only `.name` is used (Jobs are filtered by the
+   * already-resolved sector name string, not sector_id). */
+  sectorOptions: OptionItem[];
+  /** Real active `profiles` rows — only `.name` is used, same reasoning. */
+  ownerOptions: OptionItem[];
 }
 
 export function JobsToolbar({
@@ -30,7 +33,20 @@ export function JobsToolbar({
   onSectorChange,
   resultCount,
   onReset,
+  sectorOptions,
+  ownerOptions,
 }: JobsToolbarProps) {
+  const jobOwnerFilterOptions = [
+    { label: "All owners", value: "All owners" },
+    ...ownerOptions.map((owner) => ({ label: owner.name, value: owner.name })),
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
+  const jobSectorFilterOptions = [
+    "All sectors",
+    ...sectorOptions.map((sector) => sector.name),
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">

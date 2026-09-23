@@ -7,30 +7,58 @@ import type { NoteRecord } from "@/lib/mock/detail-shared";
 
 const CURRENT_USER_NAME = "Moremi Molai";
 
+interface NotesSectionProps {
+  entityId: string;
+  initialNotes: NoteRecord[];
+  /**
+   * When provided, notes are persisted for real (author comes from the
+   * server's own authenticated session — never trusted from here) and the
+   * "preview only" caption is replaced with truthful copy. Omitted by every
+   * still-mock detail screen (Applications/Enquiries/Staff Requests), which
+   * keeps the original local-only behaviour unchanged.
+   */
+  onAddNote?: (text: string) => Promise<{ ok: true; note: NoteRecord } | { ok: false; error: string }>;
+}
+
 export function NotesSection({
   entityId,
   initialNotes,
-}: {
-  entityId: string;
-  initialNotes: NoteRecord[];
-}) {
+  onAddNote,
+}: NotesSectionProps) {
   const [notes, setNotes] = useState(initialNotes);
   const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const textareaId = `${entityId}-new-note`;
 
-  function handleAddNote() {
+  async function handleAddNote() {
     const text = draft.trim();
     if (!text) return;
 
-    setNotes((previous) => [
-      ...previous,
-      {
-        id: `${entityId}-note-local-${previous.length + 1}`,
-        author: CURRENT_USER_NAME,
-        timestamp: "Just now",
-        text,
-      },
-    ]);
+    if (!onAddNote) {
+      setNotes((previous) => [
+        ...previous,
+        {
+          id: `${entityId}-note-local-${previous.length + 1}`,
+          author: CURRENT_USER_NAME,
+          timestamp: "Just now",
+          text,
+        },
+      ]);
+      setDraft("");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    const result = await onAddNote(text);
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setNotes((previous) => [...previous, result.note]);
     setDraft("");
   }
 
@@ -66,18 +94,24 @@ export function NotesSection({
           placeholder="Add an internal note…"
           rows={3}
         />
+        {error ? (
+          <p className="text-xs font-medium text-complex-red" role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-fg-muted">
-            Preview only — notes are kept for this session and are not
-            persisted.
+            {onAddNote
+              ? "Visible to your team once added."
+              : "Preview only — notes are kept for this session and are not persisted."}
           </p>
           <button
             type="button"
             onClick={handleAddNote}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || isSaving}
             className="flex h-9 shrink-0 items-center justify-center rounded-md border border-surface-secondary bg-card px-4 text-sm font-medium text-fg outline-none transition-colors duration-150 hover:border-contrast hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-default disabled:opacity-50 disabled:hover:border-surface-secondary disabled:hover:bg-card"
           >
-            Add note
+            {isSaving ? "Saving…" : "Add note"}
           </button>
         </div>
       </div>

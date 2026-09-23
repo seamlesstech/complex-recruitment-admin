@@ -38,12 +38,6 @@ export type CandidateAvailability =
   | "Unavailable"
   | "Inactive";
 
-export interface CurrentUser {
-  name: string;
-  role: string;
-  initials: string;
-}
-
 /** The Settings "My profile" section's locally-editable copy of the current user. */
 export interface UserProfileSettings {
   name: string;

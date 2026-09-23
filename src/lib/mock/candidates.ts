@@ -125,27 +125,11 @@ const unappliedCandidates: Candidate[] = [
   },
 ];
 
+// The real /candidates and /candidates/[id] screens no longer use this
+// mock dataset at all — see src/lib/candidates/queries.ts. It stays here
+// because Enquiry Detail (still mock-only) looks up a mock candidate by id
+// to resolve its "converted to candidate" link.
 export const candidates: Candidate[] = [
   ...appliedCandidates,
   ...unappliedCandidates,
 ];
-
-export const candidateAvailabilityFilterOptions = [
-  "All availability",
-  "Available",
-  "Working",
-  "Unavailable",
-  "Inactive",
-] as const;
-
-export const candidateSummaryDisplayCounts = (() => {
-  const all = candidates.length;
-  return {
-    all,
-    available: candidates.filter((c) => c.availability === "Available").length,
-    working: candidates.filter((c) => c.availability === "Working").length,
-    unavailable: candidates.filter((c) => c.availability === "Unavailable")
-      .length,
-    inactive: candidates.filter((c) => c.availability === "Inactive").length,
-  };
-})();

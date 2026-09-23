@@ -1,7 +1,14 @@
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { candidateAvailabilityFilterOptions } from "@/lib/mock/candidates";
-import { jobOwnerFilterOptions, jobSectorFilterOptions } from "@/lib/mock/jobs";
+import type { OptionItem } from "@/lib/candidates/types";
+
+const candidateAvailabilityFilterOptions = [
+  "All availability",
+  "Available",
+  "Working",
+  "Unavailable",
+  "Inactive",
+] as const;
 
 interface CandidatesToolbarProps {
   search: string;
@@ -15,6 +22,11 @@ interface CandidatesToolbarProps {
   resultCount: number;
   hasActiveFilters: boolean;
   onReset: () => void;
+  /** Real active `profiles` — only `.name` is used (Candidates are filtered
+   * by the already-resolved owner name string, not owner_id). */
+  ownerOptions: OptionItem[];
+  /** Real `sectors` rows — same reasoning. */
+  sectorOptions: OptionItem[];
 }
 
 export function CandidatesToolbar({
@@ -29,7 +41,20 @@ export function CandidatesToolbar({
   resultCount,
   hasActiveFilters,
   onReset,
+  ownerOptions,
+  sectorOptions,
 }: CandidatesToolbarProps) {
+  const jobOwnerFilterOptions = [
+    { label: "All owners", value: "All owners" },
+    ...ownerOptions.map((owner) => ({ label: owner.name, value: owner.name })),
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
+  const jobSectorFilterOptions = [
+    "All sectors",
+    ...sectorOptions.map((sector) => sector.name),
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">

@@ -10,6 +10,8 @@ import { EmploymentPaySection } from "./EmploymentPaySection";
 import { VacancyContentSection } from "./VacancyContentSection";
 import { ApplicationSettingsSection } from "./ApplicationSettingsSection";
 import { JobEditorSidebar } from "./JobEditorSidebar";
+import { createJobAction, updateJobAction } from "@/lib/jobs/actions";
+import type { OptionItem } from "@/lib/jobs/types";
 import {
   formatDateDisplay,
   type JobDraft,
@@ -31,25 +33,36 @@ function validateDraft(draft: JobDraft): JobDraftErrors {
 
 interface JobEditorProps {
   mode: "create" | "edit";
+  jobId?: string;
   initialDraft: JobDraft;
   status: JobStatus;
   applicationsCount: number;
   createdBy: string;
+  sectorOptions: OptionItem[];
+  initialEmployerOptions: OptionItem[];
+  ownerOptions: OptionItem[];
 }
 
 export function JobEditor({
   mode,
+  jobId,
   initialDraft,
   status,
   applicationsCount,
   createdBy,
+  sectorOptions,
+  initialEmployerOptions,
+  ownerOptions,
 }: JobEditorProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<JobDraft>(initialDraft);
+  const [employerOptions, setEmployerOptions] = useState(initialEmployerOptions);
   const [showErrors, setShowErrors] = useState(false);
   const [feedback, setFeedback] = useState<"publish" | "draft" | "save" | null>(
     null,
   );
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const errors = showErrors ? validateDraft(draft) : {};
   const hasErrors = Object.keys(errors).length > 0;
@@ -62,6 +75,34 @@ export function JobEditor({
   ) {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setFeedback(null);
+    setSubmitError(null);
+  }
+
+  function handleEmployerCreated(employer: OptionItem) {
+    setEmployerOptions((prev) => [...prev, employer].sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  async function persist(targetStatus: JobStatus, feedbackKind: "publish" | "draft" | "save") {
+    setSubmitError(null);
+    setIsSubmitting(true);
+    const result =
+      mode === "create"
+        ? await createJobAction(draft, targetStatus)
+        : await updateJobAction(jobId!, draft, targetStatus);
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error);
+      return;
+    }
+
+    if (mode === "create") {
+      router.push(`/jobs/${result.id}/edit`);
+      return;
+    }
+
+    setFeedback(feedbackKind);
+    router.refresh();
   }
 
   function handlePrimary() {
@@ -71,11 +112,17 @@ export function JobEditor({
       setFeedback(null);
       return;
     }
-    setFeedback(isDraftStatus ? "publish" : "save");
+    void persist(isDraftStatus ? "Open" : status, isDraftStatus ? "publish" : "save");
   }
 
   function handleSaveDraft() {
-    setFeedback("draft");
+    const validationErrors = validateDraft(draft);
+    setShowErrors(true);
+    if (Object.keys(validationErrors).length > 0) {
+      setFeedback(null);
+      return;
+    }
+    void persist("Draft", "draft");
   }
 
   function handleCancel() {
@@ -108,11 +155,13 @@ export function JobEditor({
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          {showErrors && hasErrors ? (
+          {(showErrors && hasErrors) || submitError ? (
             <div className="flex items-center gap-2 rounded-md border border-red-line bg-red-tint px-4 py-3 text-sm font-medium text-complex-red">
               <AlertCircle size={16} className="shrink-0" />
-              Please complete the required fields before{" "}
-              {isDraftStatus ? "publishing" : "saving"}.
+              {submitError ??
+                `Please complete the required fields before ${
+                  isDraftStatus ? "publishing" : "saving"
+                }.`}
             </div>
           ) : null}
 
@@ -120,6 +169,9 @@ export function JobEditor({
             draft={draft}
             errors={errors}
             onChange={handleChange}
+            sectorOptions={sectorOptions}
+            employerOptions={employerOptions}
+            onEmployerCreated={handleEmployerCreated}
           />
           <LocationSection
             draft={draft}
@@ -150,6 +202,7 @@ export function JobEditor({
           createdBy={createdBy}
           owner={draft.owner}
           onOwnerChange={(owner) => handleChange("owner", owner)}
+          ownerOptions={ownerOptions}
           publishOnWebsite={draft.publishOnWebsite}
           onPublishToggle={(value) => handleChange("publishOnWebsite", value)}
           closingDate={formatDateDisplay(draft.closingDate)}
@@ -159,6 +212,7 @@ export function JobEditor({
           showSaveDraft={isDraftStatus}
           onSaveDraft={handleSaveDraft}
           onCancel={handleCancel}
+          isSubmitting={isSubmitting}
         />
       </div>
     </div>

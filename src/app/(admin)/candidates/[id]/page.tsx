@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { CandidateDetailView } from "@/components/admin/candidates/detail/CandidateDetailView";
-import { getCandidateDetailById } from "@/lib/mock/candidate-details";
+import { getCandidateForDetail, getOwnerOptions } from "@/lib/candidates/queries";
 
 export default async function CandidateDetailPage({
   params,
 }: PageProps<"/candidates/[id]">) {
   const { id } = await params;
-  const detail = getCandidateDetailById(id);
+
+  const [detail, ownerOptions] = await Promise.all([
+    getCandidateForDetail(id),
+    getOwnerOptions(),
+  ]);
 
   if (!detail) {
     return (
@@ -25,5 +29,5 @@ export default async function CandidateDetailPage({
     );
   }
 
-  return <CandidateDetailView detail={detail} />;
+  return <CandidateDetailView detail={detail} ownerOptions={ownerOptions} />;
 }

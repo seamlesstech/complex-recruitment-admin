@@ -46,22 +46,6 @@ export interface JobDraftSectionProps {
   onChange: JobDraftUpdater;
 }
 
-export const mockNewJobReference = "JOB-0242";
-
-export const jobSectorOptions = [
-  "Driving & Transport",
-  "Industrial & Warehouse",
-  "Construction",
-];
-
-export const jobClientOptions = [
-  "Metro Distribution",
-  "ABC Logistics",
-  "Westbridge Construction",
-  "Northway Distribution",
-  "Prime Haulage",
-];
-
 export const workplaceTypeOptions: WorkplaceType[] = [
   "On-site",
   "Hybrid",
@@ -90,18 +74,17 @@ export const payTypeOptions: PayType[] = [
   "Negotiable",
 ];
 
-export const assignedRecruiterOptions = [
-  "Moremi Molai",
-  "Taurai",
-  "Shingi",
-  "Unassigned",
-];
-
+/**
+ * `reference` is empty — the database generates the real JOB-xxxx reference
+ * on save, never the client — and `owner` is empty ("Unassigned") by
+ * default; src/app/(admin)/jobs/new/page.tsx overrides it to the creating
+ * profile's real id.
+ */
 export const initialJobDraft: JobDraft = {
   title: "",
   sector: "",
   client: "",
-  reference: mockNewJobReference,
+  reference: "",
   location: "",
   workplaceType: "On-site",
   vacancies: 1,
@@ -117,7 +100,7 @@ export const initialJobDraft: JobDraft = {
   benefits: "",
   closingDate: "",
   applicationInstructions: "",
-  owner: "Moremi Molai",
+  owner: "",
   publishOnWebsite: true,
 };
 

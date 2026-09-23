@@ -10,7 +10,8 @@ import {
 import { EmptyState } from "@/components/admin/EmptyState";
 import { JobsToolbar } from "@/components/admin/jobs/JobsToolbar";
 import { JobsTable } from "@/components/admin/jobs/JobsTable";
-import { jobs } from "@/lib/mock/jobs";
+import type { OptionItem } from "@/lib/jobs/types";
+import type { Job } from "@/lib/mock/types";
 
 type JobsStatusFilter = "All" | "Open" | "Draft" | "ClosingSoon" | "Closed";
 
@@ -18,7 +19,24 @@ const DEFAULT_STATUS_SELECT = "All statuses";
 const DEFAULT_OWNER = "All owners";
 const DEFAULT_SECTOR = "All sectors";
 
-export default function JobsPage() {
+interface JobsPageClientProps {
+  jobs: Job[];
+  sectorOptions: OptionItem[];
+  ownerOptions: OptionItem[];
+}
+
+/**
+ * MVP filtering approach: the server component (page.tsx) fetches every
+ * non-archived job once; every filter/search/reset below runs client-side
+ * over that already-fetched array. Acceptable while job volume is small —
+ * move status/owner/sector/search to server-side query params once scale
+ * warrants it (see lib/jobs/queries.ts's getJobs() doc comment).
+ */
+export function JobsPageClient({
+  jobs,
+  sectorOptions,
+  ownerOptions,
+}: JobsPageClientProps) {
   const [statusFilter, setStatusFilter] = useState<JobsStatusFilter>("All");
   const [ownerFilter, setOwnerFilter] = useState(DEFAULT_OWNER);
   const [sectorFilter, setSectorFilter] = useState(DEFAULT_SECTOR);
@@ -129,6 +147,8 @@ export default function JobsPage() {
         onSectorChange={setSectorFilter}
         resultCount={filteredJobs.length}
         onReset={handleReset}
+        sectorOptions={sectorOptions}
+        ownerOptions={ownerOptions}
       />
 
       {filteredJobs.length > 0 ? (

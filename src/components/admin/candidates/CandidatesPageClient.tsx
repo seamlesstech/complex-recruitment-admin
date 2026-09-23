@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import {
   SummaryFilters,
   type SummaryFilterItem,
@@ -8,11 +9,9 @@ import {
 import { EmptyState } from "@/components/admin/EmptyState";
 import { CandidatesToolbar } from "@/components/admin/candidates/CandidatesToolbar";
 import { CandidatesTable } from "@/components/admin/candidates/CandidatesTable";
-import {
-  candidateSummaryDisplayCounts,
-  candidates,
-} from "@/lib/mock/candidates";
-import type { CandidateAvailability } from "@/lib/mock/types";
+import { AddCandidateModal } from "@/components/admin/candidates/AddCandidateModal";
+import type { OptionItem } from "@/lib/candidates/types";
+import type { Candidate, CandidateAvailability } from "@/lib/mock/types";
 
 type CandidatesAvailabilityFilter = "All" | CandidateAvailability;
 
@@ -20,35 +19,44 @@ const DEFAULT_AVAILABILITY_SELECT = "All availability";
 const DEFAULT_OWNER = "All owners";
 const DEFAULT_SECTOR = "All sectors";
 
-export default function CandidatesPage() {
+interface CandidatesPageClientProps {
+  candidates: Candidate[];
+  sectorOptions: OptionItem[];
+  ownerOptions: OptionItem[];
+}
+
+/**
+ * Same MVP filtering approach as Jobs: the server component fetches every
+ * non-archived candidate once; filter/search/reset run client-side over
+ * that array. See lib/jobs/queries.ts's getJobs() doc comment for the
+ * scale trade-off this accepts.
+ */
+export function CandidatesPageClient({
+  candidates,
+  sectorOptions,
+  ownerOptions,
+}: CandidatesPageClientProps) {
   const [availabilityFilter, setAvailabilityFilter] =
     useState<CandidatesAvailabilityFilter>("All");
   const [ownerFilter, setOwnerFilter] = useState(DEFAULT_OWNER);
   const [sectorFilter, setSectorFilter] = useState(DEFAULT_SECTOR);
   const [search, setSearch] = useState("");
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const summaryCounts = {
+    all: candidates.length,
+    available: candidates.filter((c) => c.availability === "Available").length,
+    working: candidates.filter((c) => c.availability === "Working").length,
+    unavailable: candidates.filter((c) => c.availability === "Unavailable").length,
+    inactive: candidates.filter((c) => c.availability === "Inactive").length,
+  };
 
   const summaryItems: SummaryFilterItem<CandidatesAvailabilityFilter>[] = [
-    { value: "All", label: "All", count: candidateSummaryDisplayCounts.all },
-    {
-      value: "Available",
-      label: "Available",
-      count: candidateSummaryDisplayCounts.available,
-    },
-    {
-      value: "Working",
-      label: "Working",
-      count: candidateSummaryDisplayCounts.working,
-    },
-    {
-      value: "Unavailable",
-      label: "Unavailable",
-      count: candidateSummaryDisplayCounts.unavailable,
-    },
-    {
-      value: "Inactive",
-      label: "Inactive",
-      count: candidateSummaryDisplayCounts.inactive,
-    },
+    { value: "All", label: "All", count: summaryCounts.all },
+    { value: "Available", label: "Available", count: summaryCounts.available },
+    { value: "Working", label: "Working", count: summaryCounts.working },
+    { value: "Unavailable", label: "Unavailable", count: summaryCounts.unavailable },
+    { value: "Inactive", label: "Inactive", count: summaryCounts.inactive },
   ];
 
   const filteredCandidates = candidates.filter((candidate) => {
@@ -105,13 +113,23 @@ export default function CandidatesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
-          Candidates
-        </h1>
-        <p className="text-sm text-fg-muted">
-          Manage registered candidates, availability and recruiter ownership.
-        </p>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Candidates
+          </h1>
+          <p className="text-sm text-fg-muted">
+            Manage registered candidates, availability and recruiter ownership.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-md bg-complex-red px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+        >
+          <Plus size={16} strokeWidth={2.25} />
+          Add candidate
+        </button>
       </div>
 
       <SummaryFilters
@@ -132,6 +150,8 @@ export default function CandidatesPage() {
         resultCount={filteredCandidates.length}
         hasActiveFilters={hasActiveFilters}
         onReset={handleReset}
+        sectorOptions={sectorOptions}
+        ownerOptions={ownerOptions}
       />
 
       {filteredCandidates.length > 0 ? (
@@ -143,6 +163,14 @@ export default function CandidatesPage() {
           onReset={handleReset}
         />
       )}
+
+      {addModalOpen ? (
+        <AddCandidateModal
+          sectorOptions={sectorOptions}
+          ownerOptions={ownerOptions}
+          onClose={() => setAddModalOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,13 +1,15 @@
-import { Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { FormField } from "@/components/admin/forms/FormField";
 import { SelectInput } from "@/components/admin/forms/SelectInput";
-import { assignedRecruiterDetailOptions } from "@/lib/mock/application-details";
-import { candidateAvailabilityFilterOptions } from "@/lib/mock/candidates";
+import type { OptionItem } from "@/lib/candidates/types";
 import type { CandidateAvailability } from "@/lib/mock/types";
 
-const availabilityOptions = candidateAvailabilityFilterOptions.filter(
-  (option): option is CandidateAvailability => option !== "All availability",
-);
+const availabilityOptions: CandidateAvailability[] = [
+  "Available",
+  "Working",
+  "Unavailable",
+  "Inactive",
+];
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -21,28 +23,34 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 interface CandidateDetailSidebarProps {
   availability: CandidateAvailability;
   onAvailabilityChange: (availability: CandidateAvailability) => void;
-  owner: string;
-  onOwnerChange: (owner: string) => void;
+  ownerId: string;
+  onOwnerChange: (ownerId: string) => void;
+  ownerOptions: OptionItem[];
   candidateReference: string;
   registeredLabel: string;
   applicationCount: number;
   sector: string;
   location: string;
   showSaveFeedback: boolean;
+  saveError: string | null;
+  isSaving: boolean;
   onSave: () => void;
 }
 
 export function CandidateDetailSidebar({
   availability,
   onAvailabilityChange,
-  owner,
+  ownerId,
   onOwnerChange,
+  ownerOptions,
   candidateReference,
   registeredLabel,
   applicationCount,
   sector,
   location,
   showSaveFeedback,
+  saveError,
+  isSaving,
   onSave,
 }: CandidateDetailSidebarProps) {
   return (
@@ -67,12 +75,13 @@ export function CandidateDetailSidebar({
         <FormField label="Assigned recruiter" htmlFor="candidate-owner">
           <SelectInput
             id="candidate-owner"
-            value={owner}
+            value={ownerId}
             onChange={(event) => onOwnerChange(event.target.value)}
           >
-            {assignedRecruiterDetailOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">Unassigned</option>
+            {ownerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
               </option>
             ))}
           </SelectInput>
@@ -91,19 +100,28 @@ export function CandidateDetailSidebar({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-surface-secondary pt-5">
-        {showSaveFeedback ? (
+        {saveError ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-red-line bg-red-tint px-3 py-2 text-xs font-medium text-complex-red"
+          >
+            <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{saveError}</span>
+          </div>
+        ) : showSaveFeedback ? (
           <div className="flex items-start gap-2 rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
             <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>Preview only — changes have not been persisted.</span>
+            <span>Changes saved.</span>
           </div>
         ) : null}
 
         <button
           type="button"
           onClick={onSave}
-          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          disabled={isSaving}
+          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Save changes
+          {isSaving ? "Saving…" : "Save changes"}
         </button>
       </div>
     </aside>

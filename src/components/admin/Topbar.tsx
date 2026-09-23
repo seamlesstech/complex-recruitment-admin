@@ -5,8 +5,8 @@ import { ChevronDown, Menu } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { NotificationPopover } from "./NotificationPopover";
 import { ThemeToggle } from "./ThemeToggle";
+import { useCurrentUser } from "./CurrentUserProvider";
 import { allNavItems } from "./nav-config";
-import { currentUser } from "@/lib/mock/user";
 
 function currentSectionLabel(pathname: string) {
   if (pathname === "/") return "Dashboard";
@@ -16,11 +16,11 @@ function currentSectionLabel(pathname: string) {
   return match?.label ?? "";
 }
 
-const firstName = currentUser.name.split(" ")[0];
-
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const section = currentSectionLabel(pathname);
+  const { displayName, initials } = useCurrentUser();
+  const firstName = displayName.split(" ")[0];
 
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-b border-surface-secondary bg-card px-4 sm:px-6">
@@ -41,7 +41,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <NotificationPopover />
         <div className="hidden h-6 w-px bg-surface-secondary sm:block" />
         <div className="flex items-center gap-1.5">
-          <Avatar initials={currentUser.initials} size="sm" />
+          <Avatar initials={initials} size="sm" />
           <span className="hidden text-sm font-medium text-fg sm:inline">
             {firstName}
           </span>

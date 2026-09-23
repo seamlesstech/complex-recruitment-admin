@@ -1,5 +1,13 @@
 import type { Job } from "./types";
 
+/**
+ * The real Jobs screens (/jobs, /jobs/new, /jobs/[id]/edit) no longer use
+ * this mock dataset at all — see src/lib/jobs/queries.ts. It stays here
+ * because Team, Candidates, Staff Requests and Applications are still
+ * mock-only screens that cross-reference mock jobs for their own workload
+ * counts and "related job" lookups; removing it would break those screens
+ * for no benefit until they're migrated too.
+ */
 export const jobs: Job[] = [
   {
     id: "job-0241",
@@ -226,13 +234,6 @@ export const jobs: Job[] = [
     createdAt: "2026-08-15",
   },
 ];
-
-export const jobStatusFilterOptions = [
-  "All statuses",
-  "Open",
-  "Draft",
-  "Closed",
-] as const;
 
 export const jobOwnerFilterOptions = [
   { label: "All owners", value: "All owners" },

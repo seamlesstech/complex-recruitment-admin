@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CandidateProfileSection } from "./CandidateProfileSection";
 import { ApplicationHistorySection } from "./ApplicationHistorySection";
@@ -9,38 +10,60 @@ import { DocumentsSection } from "@/components/admin/detail/DocumentsSection";
 import { NotesSection } from "@/components/admin/detail/NotesSection";
 import { ActivitySection } from "@/components/admin/detail/ActivitySection";
 import { CandidateDetailSidebar } from "./CandidateDetailSidebar";
-import { resolveOwnerDisplayName } from "@/lib/mock/candidate-identity";
-import type { CandidateDetail } from "@/lib/mock/candidate-details";
+import { addCandidateNoteAction, updateCandidateDetailAction } from "@/lib/candidates/actions";
+import type { CandidateDetailData, OptionItem } from "@/lib/candidates/types";
 import type { CandidateAvailability } from "@/lib/mock/types";
 
-export function CandidateDetailView({ detail }: { detail: CandidateDetail }) {
-  const {
-    candidate,
-    registeredLabel,
-    applications,
-    documents,
-    notes,
-    activity,
-  } = detail;
+export function CandidateDetailView({
+  detail,
+  ownerOptions,
+}: {
+  detail: CandidateDetailData;
+  ownerOptions: OptionItem[];
+}) {
+  const router = useRouter();
+  const { candidate, registeredLabel, applications, documents, notes, activity } = detail;
 
   const [availability, setAvailability] = useState<CandidateAvailability>(
     candidate.availability,
   );
-  const [owner, setOwner] = useState(resolveOwnerDisplayName(candidate.owner));
+  const [ownerId, setOwnerId] = useState(detail.ownerId ?? "");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showSaveFeedback, setShowSaveFeedback] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   function handleAvailabilityChange(next: CandidateAvailability) {
     setAvailability(next);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
   function handleOwnerChange(next: string) {
-    setOwner(next);
+    setOwnerId(next);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    const result = await updateCandidateDetailAction(
+      candidate.id,
+      availability,
+      ownerId || null,
+    );
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
     setShowSaveFeedback(true);
+    router.refresh();
+  }
+
+  async function handleAddNote(text: string) {
+    return addCandidateNoteAction(candidate.id, text);
   }
 
   return (
@@ -73,21 +96,28 @@ export function CandidateDetailView({ detail }: { detail: CandidateDetail }) {
           />
           <ApplicationHistorySection applications={applications} />
           <DocumentsSection documents={documents} />
-          <NotesSection entityId={candidate.id} initialNotes={notes} />
+          <NotesSection
+            entityId={candidate.id}
+            initialNotes={notes}
+            onAddNote={handleAddNote}
+          />
           <ActivitySection activity={activity} />
         </div>
 
         <CandidateDetailSidebar
           availability={availability}
           onAvailabilityChange={handleAvailabilityChange}
-          owner={owner}
+          ownerId={ownerId}
           onOwnerChange={handleOwnerChange}
+          ownerOptions={ownerOptions}
           candidateReference={candidate.reference}
           registeredLabel={registeredLabel}
           applicationCount={applications.length}
           sector={candidate.sector}
           location={candidate.location}
           showSaveFeedback={showSaveFeedback}
+          saveError={saveError}
+          isSaving={isSaving}
           onSave={handleSave}
         />
       </div>

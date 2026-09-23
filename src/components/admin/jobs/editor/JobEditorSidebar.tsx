@@ -3,7 +3,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { FormField } from "@/components/admin/forms/FormField";
 import { SelectInput } from "@/components/admin/forms/SelectInput";
 import { Toggle } from "@/components/admin/forms/Toggle";
-import { assignedRecruiterOptions } from "@/lib/mock/job-editor";
+import type { OptionItem } from "@/lib/jobs/types";
 import type { JobStatus } from "@/lib/mock/types";
 
 interface JobEditorSidebarProps {
@@ -13,6 +13,7 @@ interface JobEditorSidebarProps {
   createdBy: string;
   owner: string;
   onOwnerChange: (owner: string) => void;
+  ownerOptions: OptionItem[];
   publishOnWebsite: boolean;
   onPublishToggle: (value: boolean) => void;
   closingDate: string;
@@ -22,6 +23,7 @@ interface JobEditorSidebarProps {
   showSaveDraft: boolean;
   onSaveDraft: () => void;
   onCancel: () => void;
+  isSubmitting: boolean;
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -34,10 +36,9 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 const feedbackCopy: Record<"publish" | "draft" | "save", string> = {
-  publish:
-    "Preview only — this vacancy has not been published. Backend publishing will be added later.",
-  draft: "Preview only — this draft has not been saved anywhere yet.",
-  save: "Preview only — these changes have not been saved yet.",
+  publish: "Job published.",
+  draft: "Draft saved.",
+  save: "Changes saved.",
 };
 
 export function JobEditorSidebar({
@@ -47,6 +48,7 @@ export function JobEditorSidebar({
   createdBy,
   owner,
   onOwnerChange,
+  ownerOptions,
   publishOnWebsite,
   onPublishToggle,
   closingDate,
@@ -56,6 +58,7 @@ export function JobEditorSidebar({
   showSaveDraft,
   onSaveDraft,
   onCancel,
+  isSubmitting,
 }: JobEditorSidebarProps) {
   return (
     <aside className="flex flex-col gap-5 rounded-lg border border-surface-secondary bg-card p-5 xl:sticky xl:top-[76px]">
@@ -71,9 +74,10 @@ export function JobEditorSidebar({
             value={owner}
             onChange={(event) => onOwnerChange(event.target.value)}
           >
-            {assignedRecruiterOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">Unassigned</option>
+            {ownerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
               </option>
             ))}
           </SelectInput>
@@ -118,23 +122,26 @@ export function JobEditorSidebar({
         <button
           type="button"
           onClick={onPrimary}
-          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          disabled={isSubmitting}
+          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {primaryLabel}
+          {isSubmitting ? "Saving…" : primaryLabel}
         </button>
         {showSaveDraft ? (
           <button
             type="button"
             onClick={onSaveDraft}
-            className="flex h-10 items-center justify-center rounded-md border border-surface-secondary bg-card text-sm font-medium text-fg transition-colors duration-150 hover:border-contrast hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+            disabled={isSubmitting}
+            className="flex h-10 items-center justify-center rounded-md border border-surface-secondary bg-card text-sm font-medium text-fg transition-colors duration-150 hover:border-contrast hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Save draft
+            {isSubmitting ? "Saving…" : "Save draft"}
           </button>
         ) : null}
         <button
           type="button"
           onClick={onCancel}
-          className="flex h-9 items-center justify-center rounded-md text-sm font-medium text-fg-muted transition-colors duration-150 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          disabled={isSubmitting}
+          className="flex h-9 items-center justify-center rounded-md text-sm font-medium text-fg-muted transition-colors duration-150 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
         >
           Cancel
         </button>

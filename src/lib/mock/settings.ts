@@ -1,21 +1,14 @@
-import { teamMembers } from "./team";
-import { currentUser } from "./user";
 import type {
   NotificationPreferenceChannels,
   NotificationPreferenceDefinition,
   NotificationPreferenceKey,
-  UserProfileSettings,
 } from "./types";
 
-const currentTeamMember = teamMembers.find((member) => member.isCurrentUser);
-
-/** Seeds the Settings "My profile" form — reuses the Team record's email so the two screens stay coherent. */
-export const initialProfileSettings: UserProfileSettings = {
-  name: currentUser.name,
-  email: currentTeamMember?.email ?? "moremi.molai@complexrecruitment.co.uk",
-  role: currentUser.role,
-  initials: currentUser.initials,
-};
+// The Settings "My profile" form now seeds from the real authenticated
+// profile (see src/app/(admin)/settings/page.tsx), not from mock data —
+// there is deliberately no mock currentUser/team-derived export here
+// anymore, since that was the source of the shell-vs-Team/Settings
+// current-user inconsistency.
 
 export const notificationPreferenceEvents: NotificationPreferenceDefinition[] = [
   {

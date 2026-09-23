@@ -1,0 +1,51 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireActiveProfile } from "@/lib/auth/profile";
+import type { JobDraft } from "@/lib/mock/job-editor";
+import type { JobStatus } from "@/lib/mock/types";
+import { createEmployer, createJob, updateJob } from "./queries";
+import type { CreateEmployerResult, JobEditorResult } from "./types";
+
+/**
+ * Every mutating Jobs action re-verifies the caller via requireActiveProfile()
+ * itself — Server Actions are independently-invokable HTTP endpoints, so the
+ * (admin) layout's render-time check does not cover them (see Next.js's own
+ * authentication guidance: treat Server Actions like public endpoints).
+ * Beyond that, RLS is still what actually authorizes the underlying insert/
+ * update — this call only established who is asking, not what they may do.
+ */
+
+export async function createJobAction(
+  draft: JobDraft,
+  status: JobStatus,
+): Promise<JobEditorResult> {
+  const profile = await requireActiveProfile();
+  const result = await createJob(draft, status, profile.id);
+  if (result.ok) {
+    revalidatePath("/jobs");
+  }
+  return result;
+}
+
+export async function updateJobAction(
+  id: string,
+  draft: JobDraft,
+  status: JobStatus,
+): Promise<JobEditorResult> {
+  await requireActiveProfile();
+  const result = await updateJob(id, draft, status);
+  if (result.ok) {
+    revalidatePath("/jobs");
+    revalidatePath(`/jobs/${id}/edit`);
+  }
+  return result;
+}
+
+export async function createEmployerAction(
+  name: string,
+  location: string,
+): Promise<CreateEmployerResult> {
+  const profile = await requireActiveProfile();
+  return createEmployer(name, location, profile.id);
+}

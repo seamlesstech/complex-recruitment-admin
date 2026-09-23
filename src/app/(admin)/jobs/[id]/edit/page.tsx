@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { JobEditor } from "@/components/admin/jobs/editor/JobEditor";
-import { buildJobDraftFromJob } from "@/lib/mock/job-details";
-import { jobs } from "@/lib/mock/jobs";
+import { getEmployerOptions, getJobForEditor, getOwnerOptions, getSectorOptions } from "@/lib/jobs/queries";
 
 export default async function EditJobPage({
   params,
 }: PageProps<"/jobs/[id]/edit">) {
   const { id } = await params;
-  const job = jobs.find((candidate) => candidate.id === id);
+
+  const [job, sectorOptions, employerOptions, ownerOptions] = await Promise.all([
+    getJobForEditor(id),
+    getSectorOptions(),
+    getEmployerOptions(),
+    getOwnerOptions(),
+  ]);
 
   if (!job) {
     return (
@@ -26,15 +31,17 @@ export default async function EditJobPage({
     );
   }
 
-  const { draft, createdBy } = buildJobDraftFromJob(job);
-
   return (
     <JobEditor
       mode="edit"
-      initialDraft={draft}
+      jobId={id}
+      initialDraft={job.draft}
       status={job.status}
       applicationsCount={job.applicationsCount}
-      createdBy={createdBy}
+      createdBy={job.createdBy}
+      sectorOptions={sectorOptions}
+      initialEmployerOptions={employerOptions}
+      ownerOptions={ownerOptions}
     />
   );
 }
