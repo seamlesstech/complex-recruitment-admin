@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { themeInitScript } from "@/lib/theme";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
         <Script
           id="theme-init"
           strategy="beforeInteractive"
