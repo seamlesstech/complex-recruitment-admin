@@ -1426,6 +1426,19 @@ export type Database = {
       }
     }
     Functions: {
+      attach_public_application_cv: {
+        Args: {
+          p_application_id: string
+          p_document_id: string
+          p_mime_type: string
+          p_original_filename: string
+          p_size_bytes: number
+        }
+        Returns: {
+          candidate_document_id: string
+          superseded_document_id: string
+        }[]
+      }
       convert_enquiry: {
         Args: {
           p_candidate_id?: string
@@ -1466,6 +1479,13 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["profile_role"]
       }
+      discard_public_application: {
+        Args: { p_application_id: string; p_candidate_created: boolean }
+        Returns: {
+          application_deleted: boolean
+          candidate_deleted: boolean
+        }[]
+      }
       is_active_profile: { Args: never; Returns: boolean }
       is_admin_tier: { Args: never; Returns: boolean }
       show_limit: { Args: never; Returns: number }
@@ -1483,6 +1503,7 @@ export type Database = {
         Returns: {
           application_id: string
           application_reference: string
+          candidate_created: boolean
           candidate_id: string
           candidate_reference: string
         }[]

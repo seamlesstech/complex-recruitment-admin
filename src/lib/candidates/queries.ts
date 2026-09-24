@@ -4,6 +4,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { NoteRecord } from "@/lib/mock/detail-shared";
 import type { Candidate, CandidateApplication } from "@/lib/mock/types";
 import { applicationStatusFromDb } from "@/lib/applications/enums";
+import { documentFileType } from "@/lib/documents/labels";
 import { availabilityFromDb, availabilityToDb } from "./enums";
 import type { CandidateDetailData, CreateCandidateResult } from "./types";
 
@@ -235,6 +236,7 @@ async function getCandidateNotes(candidateId: string): Promise<NoteRecord[]> {
 
 type DocumentRow = {
   id: string;
+  document_type_id: string;
   original_filename: string;
   mime_type: string;
   size_bytes: number;
@@ -257,7 +259,7 @@ async function getCandidateDocuments(candidateId: string) {
   const { data, error } = await supabase
     .from("candidate_documents")
     .select(`
-      id, original_filename, mime_type, size_bytes, uploaded_at, expiry_date, is_current,
+      id, document_type_id, original_filename, mime_type, size_bytes, uploaded_at, expiry_date, is_current,
       document_type:document_types!document_type_id(name)
     `)
     .eq("candidate_id", candidateId)
@@ -269,11 +271,24 @@ async function getCandidateDocuments(candidateId: string) {
     throw new Error("Could not load documents.");
   }
 
-  return (data as unknown as DocumentRow[]).map((row) => {
-    const fileType = row.mime_type.split("/")[1]?.toUpperCase() ?? row.mime_type;
-    const context = `${row.is_current ? "Current" : "Superseded"} · Uploaded ${formatFullDate(row.uploaded_at)}`;
+  const rows = data as unknown as DocumentRow[];
+
+  // Version numbers per document type, oldest = Version 1 (rows arrive newest first).
+  const versionOf = new Map<string, number>();
+  const seenPerType = new Map<string, number>();
+  for (const row of [...rows].reverse()) {
+    const next = (seenPerType.get(row.document_type_id) ?? 0) + 1;
+    seenPerType.set(row.document_type_id, next);
+    versionOf.set(row.id, next);
+  }
+
+  return rows.map((row) => {
+    const fileType = documentFileType(row.mime_type);
+    const context = `Version ${versionOf.get(row.id)} · ${row.is_current ? "Current" : "Superseded"} · Uploaded ${formatFullDate(row.uploaded_at)}`;
     return {
       id: row.id,
+      documentId: row.id,
+      previewable: row.mime_type === "application/pdf",
       label: row.document_type?.name ?? "Document",
       fileName: row.original_filename,
       fileType,

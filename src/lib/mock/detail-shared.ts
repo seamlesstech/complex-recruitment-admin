@@ -13,6 +13,13 @@ export interface DocumentRecord {
   context: string;
   /** Display-only, e.g. "Expires 12 Mar 2027" — relevant for licences etc. */
   expiryLabel?: string;
+  /**
+   * candidate_documents.id of the exact stored version, used to request a
+   * short-lived signed URL from /api/documents/{id}. Never a Storage path.
+   */
+  documentId?: string;
+  /** True for PDFs, which can be viewed in the browser; others download. */
+  previewable?: boolean;
 }
 
 export interface NoteRecord {

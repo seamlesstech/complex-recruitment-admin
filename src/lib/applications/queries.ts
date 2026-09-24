@@ -9,6 +9,7 @@ import {
   formatFullDate,
   UUID_PATTERN,
 } from "@/lib/format";
+import { documentFileType } from "@/lib/documents/labels";
 import { applicationStatusFromDb, applicationStatusToDb } from "./enums";
 import type {
   AddApplicationNoteResult,
@@ -190,7 +191,8 @@ async function getApplicationDocuments(applicationId: string): Promise<DocumentR
     .select(`
       id, linked_at,
       document:candidate_documents!candidate_document_id(
-        original_filename, mime_type, size_bytes, uploaded_at, expiry_date, is_current,
+        id, candidate_id, document_type_id, original_filename, mime_type, size_bytes,
+        uploaded_at, expiry_date, is_current,
         document_type:document_types!document_type_id(name)
       )
     `)
@@ -202,20 +204,50 @@ async function getApplicationDocuments(applicationId: string): Promise<DocumentR
     throw new Error("Could not load documents.");
   }
 
-  return data.flatMap((row) => {
-    const doc = row.document;
-    if (!doc) return [];
-    const fileType = doc.mime_type.split("/")[1]?.toUpperCase() ?? doc.mime_type;
-    const version = doc.is_current ? "Current version" : "Earlier version";
-    return [{
-      id: row.id,
+  const docs = data.flatMap((row) => (row.document ? [{ link: row, doc: row.document }] : []));
+
+  // Version number of each linked document among the Candidate's versions of the
+  // same type (oldest = Version 1), so staff can see when an Application was
+  // submitted with a CV that has since been replaced on the Candidate profile.
+  const versionOf = new Map<string, { version: number; total: number }>();
+  const lineages = new Map(docs.map(({ doc }) => [`${doc.candidate_id}:${doc.document_type_id}`, doc]));
+  for (const doc of lineages.values()) {
+    const { data: versions, error: versionsError } = await supabase
+      .from("candidate_documents")
+      .select("id")
+      .eq("candidate_id", doc.candidate_id)
+      .eq("document_type_id", doc.document_type_id)
+      .order("uploaded_at", { ascending: true });
+    if (versionsError) {
+      console.error("getApplicationDocuments versions failed:", versionsError);
+      continue;
+    }
+    versions.forEach((version, index) =>
+      versionOf.set(version.id, { version: index + 1, total: versions.length }),
+    );
+  }
+
+  return docs.map(({ link, doc }) => {
+    const numbering = versionOf.get(doc.id);
+    const version = numbering ? `Version ${numbering.version} of ${numbering.total}` : null;
+    const standing = doc.is_current
+      ? "Candidate's current version"
+      : "Since superseded on the candidate profile";
+    return {
+      id: link.id,
+      documentId: doc.id,
+      previewable: doc.mime_type === "application/pdf",
       label: doc.document_type?.name ?? "Document",
       fileName: doc.original_filename,
-      fileType,
+      fileType: documentFileType(doc.mime_type),
       fileSize: formatFileSize(doc.size_bytes),
-      context: `Submitted with application · ${version} · Uploaded ${formatFullDate(doc.uploaded_at)}`,
+      context: [
+        `Submitted with this application ${formatDateTime(link.linked_at)}`,
+        version,
+        standing,
+      ].filter(Boolean).join(" · "),
       expiryLabel: doc.expiry_date ? `Expires ${formatFullDate(doc.expiry_date)}` : undefined,
-    }];
+    };
   });
 }
 
