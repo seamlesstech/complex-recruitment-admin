@@ -7,7 +7,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@/components/admin/table";
-import { teamWorkloadById, type TeamWorkload } from "@/lib/mock/team";
+import type { TeamWorkload } from "@/lib/team/types";
 import type { TeamMember } from "@/lib/mock/types";
 import { TeamRoleBadge } from "./TeamRoleBadge";
 import { TeamStatusBadge } from "./TeamStatusBadge";
@@ -41,8 +41,10 @@ function workloadLines(workload: TeamWorkload): [string | null, string | null] {
   ];
 }
 
-function WorkloadCell({ member }: { member: TeamMember }) {
-  const workload = teamWorkloadById[member.id];
+function WorkloadCell({ workload }: { workload: TeamWorkload | undefined }) {
+  if (!workload) {
+    return <span className="text-fg-muted">No active assignments</span>;
+  }
   const [primary, secondary] = workloadLines(workload);
 
   if (!primary && !secondary) {
@@ -62,6 +64,7 @@ function WorkloadCell({ member }: { member: TeamMember }) {
 export function TeamTable({
   members,
   currentUserEmail,
+  workloadByMemberId,
 }: {
   members: TeamMember[];
   /**
@@ -71,6 +74,8 @@ export function TeamTable({
    * against the live session instead of trusted from the mock record.
    */
   currentUserEmail: string;
+  /** Real per-member workload, computed server-side from live owner_id data. */
+  workloadByMemberId: Record<string, TeamWorkload>;
 }) {
   return (
     <div className="rounded-lg border border-surface-secondary bg-card p-4">
@@ -113,7 +118,7 @@ export function TeamTable({
                 <TeamStatusBadge status={member.status} />
               </TableCell>
               <TableCell>
-                <WorkloadCell member={member} />
+                <WorkloadCell workload={workloadByMemberId[member.id]} />
               </TableCell>
               <TableCell className="whitespace-nowrap text-fg-muted">
                 {member.lastActive}

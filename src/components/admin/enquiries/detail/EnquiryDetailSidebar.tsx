@@ -1,13 +1,9 @@
-import { Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { FormField } from "@/components/admin/forms/FormField";
 import { SelectInput } from "@/components/admin/forms/SelectInput";
-import { assignedOwnerOptions } from "@/lib/mock/enquiry-details";
-import { enquiryStatusFilterOptions } from "@/lib/mock/enquiries";
+import { CONVERTED_STATUS, enquiryStatuses as statusOptions } from "@/lib/enquiries/enums";
+import type { OptionItem } from "@/lib/enquiries/types";
 import type { EnquiryStatus } from "@/lib/mock/types";
-
-const statusOptions = enquiryStatusFilterOptions.filter(
-  (option): option is EnquiryStatus => option !== "All statuses",
-);
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -21,28 +17,43 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 interface EnquiryDetailSidebarProps {
   status: EnquiryStatus;
   onStatusChange: (status: EnquiryStatus) => void;
-  owner: string;
-  onOwnerChange: (owner: string) => void;
+  /** Real profile id, or "" for Unassigned. */
+  ownerId: string;
+  onOwnerChange: (ownerId: string) => void;
+  ownerOptions: OptionItem[];
+  /**
+   * Whether the SAVED enquiry is converted. Conversion is only ever done by
+   * the database's convert_enquiry() (status + target together), so here
+   * "Converted" can't be picked for an unconverted enquiry, and a converted
+   * enquiry's status is locked — owner stays editable either way.
+   */
+  isConverted: boolean;
   reference: string;
   receivedAt: string;
   type: string;
   source: string;
   relatedRecordLabel: string;
   showSaveFeedback: boolean;
+  saveError: string | null;
+  isSaving: boolean;
   onSave: () => void;
 }
 
 export function EnquiryDetailSidebar({
   status,
   onStatusChange,
-  owner,
+  ownerId,
   onOwnerChange,
+  ownerOptions,
+  isConverted,
   reference,
   receivedAt,
   type,
   source,
   relatedRecordLabel,
   showSaveFeedback,
+  saveError,
+  isSaving,
   onSave,
 }: EnquiryDetailSidebarProps) {
   return (
@@ -51,28 +62,40 @@ export function EnquiryDetailSidebar({
         <SelectInput
           id="enquiry-status"
           value={status}
+          disabled={isConverted}
           onChange={(event) =>
             onStatusChange(event.target.value as EnquiryStatus)
           }
         >
           {statusOptions.map((option) => (
-            <option key={option} value={option}>
+            <option
+              key={option}
+              value={option}
+              disabled={option === CONVERTED_STATUS && !isConverted}
+            >
               {option}
             </option>
           ))}
         </SelectInput>
       </FormField>
+      {isConverted ? (
+        <p className="-mt-3 text-xs text-fg-muted">
+          Converted enquiries keep this status. The record it became is linked
+          under Related record.
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-1.5 border-t border-surface-secondary pt-5">
         <FormField label="Assigned owner" htmlFor="enquiry-owner">
           <SelectInput
             id="enquiry-owner"
-            value={owner}
+            value={ownerId}
             onChange={(event) => onOwnerChange(event.target.value)}
           >
-            {assignedOwnerOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">Unassigned</option>
+            {ownerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
               </option>
             ))}
           </SelectInput>
@@ -91,19 +114,28 @@ export function EnquiryDetailSidebar({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-surface-secondary pt-5">
-        {showSaveFeedback ? (
+        {saveError ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-red-line bg-red-tint px-3 py-2 text-xs font-medium text-complex-red"
+          >
+            <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{saveError}</span>
+          </div>
+        ) : showSaveFeedback ? (
           <div className="flex items-start gap-2 rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
             <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>Preview only — changes have not been persisted.</span>
+            <span>Changes saved.</span>
           </div>
         ) : null}
 
         <button
           type="button"
           onClick={onSave}
-          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          disabled={isSaving}
+          className="flex h-10 items-center justify-center rounded-md bg-complex-red text-sm font-medium text-white outline-none transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Save changes
+          {isSaving ? "Saving…" : "Save changes"}
         </button>
       </div>
     </aside>

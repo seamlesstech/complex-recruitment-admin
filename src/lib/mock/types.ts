@@ -106,8 +106,6 @@ export interface TeamMember {
   /** ISO date, e.g. "2026-09-18" — null if not currently invited. */
   invitedAt: string | null;
   isCurrentUser: boolean;
-  /** Raw owner/assignee strings this person is known by across the mock operational datasets. */
-  operationalOwnerAliases: string[];
 }
 
 export interface Metric {

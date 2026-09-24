@@ -1,16 +1,14 @@
-import { candidateApplications } from "./candidate-applications";
-import { enquiries } from "./enquiries";
-import { jobs } from "./jobs";
-import { staffRequests } from "./staff-requests";
 import type { TeamMember, TeamMemberStatus, TeamRole } from "./types";
 
 /**
- * The people who operate Complex Admin. This is the frontend/mock model
- * only — no auth, no persistence, no permission enforcement. Moremi Molai,
- * Taurai and Shingi are the same recruiters already referenced as
- * `owner`/`assignee` across Jobs, Applications, Staff Requests and
- * Enquiries; everyone else is a fictional addition to demonstrate the full
- * role/status range.
+ * The Team ROSTER — still a preview-only frontend/mock model: no auth, no
+ * persistence, no permission enforcement (Team/account management is not
+ * migrated yet). Only "Moremi Molai" corresponds to a real profile today;
+ * everyone else is fictional, to demonstrate the full role/status range,
+ * and is deliberately NOT created as a database account.
+ *
+ * The Workload column is no longer derived here — it comes from real
+ * owner_id data via lib/team/queries.ts.
  */
 export const teamMembers: TeamMember[] = [
   {
@@ -24,7 +22,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-01-06",
     invitedAt: null,
     isCurrentUser: true,
-    operationalOwnerAliases: ["Moremi"],
   },
   {
     id: "team-taurai",
@@ -37,7 +34,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-01-12",
     invitedAt: null,
     isCurrentUser: false,
-    operationalOwnerAliases: ["Taurai"],
   },
   {
     id: "team-shingi",
@@ -50,7 +46,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-02-03",
     invitedAt: null,
     isCurrentUser: false,
-    operationalOwnerAliases: ["Shingi"],
   },
   {
     id: "team-priya-nair",
@@ -63,7 +58,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-06-18",
     invitedAt: null,
     isCurrentUser: false,
-    operationalOwnerAliases: [],
   },
   {
     id: "team-daniel-osei",
@@ -76,7 +70,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-07-22",
     invitedAt: null,
     isCurrentUser: false,
-    operationalOwnerAliases: [],
   },
   {
     id: "team-grace-whitfield",
@@ -89,7 +82,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: null,
     invitedAt: "2026-09-18",
     isCurrentUser: false,
-    operationalOwnerAliases: [],
   },
   {
     id: "team-olivia-bennett",
@@ -102,7 +94,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: null,
     invitedAt: "2026-09-20",
     isCurrentUser: false,
-    operationalOwnerAliases: [],
   },
   {
     id: "team-callum-reid",
@@ -115,7 +106,6 @@ export const teamMembers: TeamMember[] = [
     joinedAt: "2026-03-10",
     invitedAt: null,
     isCurrentUser: false,
-    operationalOwnerAliases: [],
   },
 ];
 
@@ -143,72 +133,3 @@ export const teamSummaryDisplayCounts = (() => {
     disabled: teamMembers.filter((m) => m.status === "Disabled").length,
   };
 })();
-
-export interface TeamWorkload {
-  jobs: number;
-  applications: number;
-  staffRequests: number;
-  enquiries: number;
-  total: number;
-}
-
-/**
- * "Still open" per dataset, mirroring that screen's own terminal statuses —
- * a workload count means the same thing here as it would filtering that
- * screen down to unresolved records.
- */
-const TERMINAL_APPLICATION_STATUSES = new Set(["Placed", "Rejected", "Withdrawn"]);
-const TERMINAL_STAFF_REQUEST_STATUSES = new Set(["Filled", "Closed"]);
-const TERMINAL_ENQUIRY_STATUSES = new Set(["Converted", "Closed"]);
-
-/**
- * Derives a team member's current operational workload from the existing
- * Jobs/Applications/Staff Requests/Enquiries mock datasets by matching their
- * `operationalOwnerAliases` against each record's raw `owner`/`assignee`
- * string. Mock/frontend-only — this is not the real user_id relationship.
- */
-function workloadForAliases(aliases: string[]): TeamWorkload {
-  if (aliases.length === 0) {
-    return { jobs: 0, applications: 0, staffRequests: 0, enquiries: 0, total: 0 };
-  }
-
-  const jobsCount = jobs.filter(
-    (job) => job.owner && aliases.includes(job.owner) && job.status !== "Closed",
-  ).length;
-
-  const applicationsCount = candidateApplications.filter(
-    (application) =>
-      application.owner &&
-      aliases.includes(application.owner) &&
-      !TERMINAL_APPLICATION_STATUSES.has(application.status),
-  ).length;
-
-  const staffRequestsCount = staffRequests.filter(
-    (request) =>
-      request.owner &&
-      aliases.includes(request.owner) &&
-      !TERMINAL_STAFF_REQUEST_STATUSES.has(request.status),
-  ).length;
-
-  const enquiriesCount = enquiries.filter(
-    (enquiry) =>
-      enquiry.owner &&
-      aliases.includes(enquiry.owner) &&
-      !TERMINAL_ENQUIRY_STATUSES.has(enquiry.status),
-  ).length;
-
-  return {
-    jobs: jobsCount,
-    applications: applicationsCount,
-    staffRequests: staffRequestsCount,
-    enquiries: enquiriesCount,
-    total: jobsCount + applicationsCount + staffRequestsCount + enquiriesCount,
-  };
-}
-
-export const teamWorkloadById: Record<string, TeamWorkload> = Object.fromEntries(
-  teamMembers.map((member) => [
-    member.id,
-    workloadForAliases(member.operationalOwnerAliases),
-  ]),
-);

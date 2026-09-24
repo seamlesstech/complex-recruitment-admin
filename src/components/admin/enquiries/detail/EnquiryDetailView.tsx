@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ContactSection } from "./ContactSection";
@@ -10,41 +11,76 @@ import { RelatedRecordSection } from "./RelatedRecordSection";
 import { NotesSection } from "@/components/admin/detail/NotesSection";
 import { ActivitySection } from "@/components/admin/detail/ActivitySection";
 import { EnquiryDetailSidebar } from "./EnquiryDetailSidebar";
-import { resolveOwnerDisplayName } from "@/lib/mock/candidate-identity";
-import type { EnquiryDetail } from "@/lib/mock/enquiry-details";
+import {
+  addEnquiryNoteAction,
+  updateEnquiryDetailAction,
+} from "@/lib/enquiries/actions";
+import type {
+  EnquiryDetailData,
+  EnquiryRelatedRecord,
+  OptionItem,
+} from "@/lib/enquiries/types";
 import type { EnquiryStatus } from "@/lib/mock/types";
 
-function relatedRecordLabel(
-  relatedRecord: EnquiryDetail["relatedRecord"],
-): string {
+function relatedRecordLabel(relatedRecord: EnquiryRelatedRecord): string {
   if (relatedRecord?.type === "staff-request") return "Staff Request";
   if (relatedRecord?.type === "candidate") return "Candidate";
   return "None";
 }
 
-export function EnquiryDetailView({ detail }: { detail: EnquiryDetail }) {
+export function EnquiryDetailView({
+  detail,
+  ownerOptions,
+}: {
+  detail: EnquiryDetailData;
+  ownerOptions: OptionItem[];
+}) {
+  const router = useRouter();
   const { enquiry, relatedRecord, notes, activity } = detail;
+  const isConverted = enquiry.status === "Converted";
 
   const [status, setStatus] = useState<EnquiryStatus>(enquiry.status);
-  const [owner, setOwner] = useState(resolveOwnerDisplayName(enquiry.owner));
+  const [ownerId, setOwnerId] = useState(detail.ownerId ?? "");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showSaveFeedback, setShowSaveFeedback] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   function handleStatusChange(next: EnquiryStatus) {
     setStatus(next);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
   function handleOwnerChange(next: string) {
-    setOwner(next);
+    setOwnerId(next);
     setShowSaveFeedback(false);
+    setSaveError(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    const result = await updateEnquiryDetailAction(
+      enquiry.id,
+      status,
+      ownerId || null,
+    );
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
     setShowSaveFeedback(true);
+    router.refresh();
+  }
+
+  async function handleAddNote(text: string) {
+    return addEnquiryNoteAction(enquiry.id, text);
   }
 
   const supportingContext = enquiry.company
-    ? `${enquiry.reference} · ${enquiry.company}`
+    ? `${enquiry.reference} · ${enquiry.company} · ${enquiry.type} enquiry`
     : `${enquiry.reference} · ${enquiry.type} enquiry`;
 
   return (
@@ -63,7 +99,8 @@ export function EnquiryDetailView({ detail }: { detail: EnquiryDetail }) {
             <h1 className="text-2xl font-semibold tracking-tight text-fg">
               {enquiry.contactName}
             </h1>
-            <StatusBadge status={status} />
+            {/* Header reflects the saved status; the rail holds the unsaved draft. */}
+            <StatusBadge status={enquiry.status} />
           </div>
           <p className="text-sm text-fg-muted">{supportingContext}</p>
           <p className="text-sm text-fg-muted">
@@ -77,21 +114,29 @@ export function EnquiryDetailView({ detail }: { detail: EnquiryDetail }) {
           <ContactSection enquiry={enquiry} />
           <EnquirySection enquiry={enquiry} />
           <RelatedRecordSection relatedRecord={relatedRecord} />
-          <NotesSection entityId={enquiry.id} initialNotes={notes} />
+          <NotesSection
+            entityId={enquiry.id}
+            initialNotes={notes}
+            onAddNote={handleAddNote}
+          />
           <ActivitySection activity={activity} />
         </div>
 
         <EnquiryDetailSidebar
           status={status}
           onStatusChange={handleStatusChange}
-          owner={owner}
+          ownerId={ownerId}
           onOwnerChange={handleOwnerChange}
+          ownerOptions={ownerOptions}
+          isConverted={isConverted}
           reference={enquiry.reference}
           receivedAt={enquiry.receivedAt}
           type={enquiry.type}
           source={enquiry.source}
           relatedRecordLabel={relatedRecordLabel(relatedRecord)}
           showSaveFeedback={showSaveFeedback}
+          saveError={saveError}
+          isSaving={isSaving}
           onSave={handleSave}
         />
       </div>

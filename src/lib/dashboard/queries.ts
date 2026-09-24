@@ -4,6 +4,7 @@ import {
   getCandidateCount,
   getCandidatesRegisteredThisMonthCount,
 } from "@/lib/candidates/queries";
+import { getNewEnquiryCount } from "@/lib/enquiries/queries";
 import { getOpenJobsSummary } from "@/lib/jobs/queries";
 import {
   getRecentStaffRequests,
@@ -16,8 +17,9 @@ import type { AttentionItem, Metric, StaffRequest } from "@/lib/mock/types";
  * Composes the Dashboard purely from the live domain queries (each still
  * RLS-scoped to the viewer). No business logic lives here beyond turning
  * real counts into the existing Metric / AttentionItem display shapes —
- * nothing is invented to fill the panels. Enquiries are not included yet
- * (still mock; they migrate next).
+ * nothing is invented to fill the panels. Enquiries feed only the
+ * "Needs your attention" panel (the approved metrics row has no Enquiries
+ * card).
  */
 
 function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
@@ -40,6 +42,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     registeredThisMonth,
     recentApplications,
     recentStaffRequests,
+    newEnquiries,
   ] = await Promise.all([
     getOpenJobsSummary(),
     getNewApplicationCount(),
@@ -48,6 +51,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     getCandidatesRegisteredThisMonthCount(),
     getRecentApplications(),
     getRecentStaffRequests(),
+    getNewEnquiryCount(),
   ]);
 
   const closingSoonCount = jobs.closingSoon.length;
@@ -109,6 +113,15 @@ export async function getDashboardData(): Promise<DashboardData> {
       context: "Waiting on an owner",
       href: "/staff-requests",
       urgent: true,
+    });
+  }
+
+  if (newEnquiries > 0) {
+    attentionItems.push({
+      id: "new-enquiries",
+      title: `${newEnquiries} new ${plural(newEnquiries, "enquiry", "enquiries")} to triage`,
+      context: "Still at status New",
+      href: "/enquiries",
     });
   }
 

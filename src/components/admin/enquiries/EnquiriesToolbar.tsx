@@ -1,10 +1,10 @@
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import {
-  enquiryStatusFilterOptions,
-  enquiryTypeFilterOptions,
-} from "@/lib/mock/enquiries";
-import { jobOwnerFilterOptions } from "@/lib/mock/jobs";
+import { enquiryStatuses, enquiryTypes } from "@/lib/enquiries/enums";
+import type { OptionItem } from "@/lib/enquiries/types";
+
+const enquiryStatusFilterOptions = ["All statuses", ...enquiryStatuses];
+const enquiryTypeFilterOptions = ["All types", ...enquiryTypes];
 
 interface EnquiriesToolbarProps {
   search: string;
@@ -18,6 +18,9 @@ interface EnquiriesToolbarProps {
   resultCount: number;
   hasActiveFilters: boolean;
   onReset: () => void;
+  /** Real active `profiles` — only `.name` is used (enquiries are filtered
+   * by the already-resolved owner name string, same as the other lists). */
+  ownerOptions: OptionItem[];
 }
 
 export function EnquiriesToolbar({
@@ -32,7 +35,14 @@ export function EnquiriesToolbar({
   resultCount,
   hasActiveFilters,
   onReset,
+  ownerOptions,
 }: EnquiriesToolbarProps) {
+  const ownerFilterOptions = [
+    { label: "All owners", value: "All owners" },
+    ...ownerOptions.map((owner) => ({ label: owner.name, value: owner.name })),
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">
@@ -67,7 +77,7 @@ export function EnquiriesToolbar({
       </FilterSelect>
 
       <FilterSelect value={ownerValue} onChange={onOwnerChange} label="Owner">
-        {jobOwnerFilterOptions.map((option) => (
+        {ownerFilterOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

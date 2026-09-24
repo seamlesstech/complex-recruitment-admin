@@ -5,19 +5,15 @@ import { DetailCard } from "./DetailCard";
 import { TextArea } from "@/components/admin/forms/TextArea";
 import type { NoteRecord } from "@/lib/mock/detail-shared";
 
-const CURRENT_USER_NAME = "Moremi Molai";
-
 interface NotesSectionProps {
   entityId: string;
   initialNotes: NoteRecord[];
   /**
-   * When provided, notes are persisted for real (author comes from the
-   * server's own authenticated session — never trusted from here) and the
-   * "preview only" caption is replaced with truthful copy. Candidates and
-   * Applications pass it; still-mock detail screens (Enquiries/Staff
-   * Requests) omit it and keep the original local-only behaviour.
+   * Persists the note for real (the author comes from the server's own
+   * authenticated session — never trusted from here). Every detail screen
+   * is now live, so there is no local-only/preview mode any more.
    */
-  onAddNote?: (text: string) => Promise<{ ok: true; note: NoteRecord } | { ok: false; error: string }>;
+  onAddNote: (text: string) => Promise<{ ok: true; note: NoteRecord } | { ok: false; error: string }>;
 }
 
 export function NotesSection({
@@ -34,20 +30,6 @@ export function NotesSection({
   async function handleAddNote() {
     const text = draft.trim();
     if (!text) return;
-
-    if (!onAddNote) {
-      setNotes((previous) => [
-        ...previous,
-        {
-          id: `${entityId}-note-local-${previous.length + 1}`,
-          author: CURRENT_USER_NAME,
-          timestamp: "Just now",
-          text,
-        },
-      ]);
-      setDraft("");
-      return;
-    }
 
     setIsSaving(true);
     setError(null);
@@ -101,9 +83,7 @@ export function NotesSection({
         ) : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-fg-muted">
-            {onAddNote
-              ? "Visible to your team once added."
-              : "Preview only — notes are kept for this session and are not persisted."}
+            Visible to your team once added.
           </p>
           <button
             type="button"

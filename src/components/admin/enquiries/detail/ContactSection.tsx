@@ -14,17 +14,25 @@ export function ContactSection({ enquiry }: { enquiry: Enquiry }) {
           <DetailField label="Company">{enquiry.company}</DetailField>
         ) : null}
         <DetailField label="Email">
-          <a href={`mailto:${enquiry.email}`} className={linkClass}>
-            {enquiry.email}
-          </a>
+          {enquiry.email ? (
+            <a href={`mailto:${enquiry.email}`} className={linkClass}>
+              {enquiry.email}
+            </a>
+          ) : (
+            "—"
+          )}
         </DetailField>
         <DetailField label="Phone">
-          <a
-            href={`tel:${enquiry.phone.replace(/\s+/g, "")}`}
-            className={linkClass}
-          >
-            {enquiry.phone}
-          </a>
+          {enquiry.phone ? (
+            <a
+              href={`tel:${enquiry.phone.replace(/\s+/g, "")}`}
+              className={linkClass}
+            >
+              {enquiry.phone}
+            </a>
+          ) : (
+            "—"
+          )}
         </DetailField>
         <DetailField label="Enquiry type">{enquiry.type}</DetailField>
       </dl>

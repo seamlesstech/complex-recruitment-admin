@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DetailCard } from "@/components/admin/detail/DetailCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { AvailabilityBadge } from "@/components/admin/candidates/AvailabilityBadge";
-import type { RelatedRecord } from "@/lib/mock/enquiry-details";
+import type { EnquiryRelatedRecord } from "@/lib/enquiries/types";
 
 const openLinkClass =
   "shrink-0 rounded text-sm font-medium text-fg-muted outline-none transition-colors duration-150 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red";
@@ -10,7 +10,7 @@ const openLinkClass =
 export function RelatedRecordSection({
   relatedRecord,
 }: {
-  relatedRecord: RelatedRecord;
+  relatedRecord: EnquiryRelatedRecord;
 }) {
   return (
     <DetailCard title="Related record">

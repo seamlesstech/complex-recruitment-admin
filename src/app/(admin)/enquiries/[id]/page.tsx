@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { EnquiryDetailView } from "@/components/admin/enquiries/detail/EnquiryDetailView";
-import { getEnquiryDetailById } from "@/lib/mock/enquiry-details";
+import { getEnquiryForDetail } from "@/lib/enquiries/queries";
+import { getOwnerOptions } from "@/lib/lookups/queries";
 
 export default async function EnquiryDetailPage({
   params,
 }: PageProps<"/enquiries/[id]">) {
   const { id } = await params;
-  const detail = getEnquiryDetailById(id);
+
+  const [detail, ownerOptions] = await Promise.all([
+    getEnquiryForDetail(id),
+    getOwnerOptions(),
+  ]);
 
   if (!detail) {
     return (
@@ -25,5 +30,5 @@ export default async function EnquiryDetailPage({
     );
   }
 
-  return <EnquiryDetailView detail={detail} />;
+  return <EnquiryDetailView detail={detail} ownerOptions={ownerOptions} />;
 }
