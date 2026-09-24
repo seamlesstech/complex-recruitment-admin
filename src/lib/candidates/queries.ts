@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { UUID_PATTERN } from "@/lib/format";
 import type { Database } from "@/lib/supabase/database.types";
 import type { NoteRecord } from "@/lib/mock/detail-shared";
 import type { Candidate, CandidateApplication } from "@/lib/mock/types";
@@ -301,6 +302,8 @@ async function getCandidateDocuments(candidateId: string) {
 
 /** Returns null when the row doesn't exist, was archived, or RLS denies it. */
 export async function getCandidateForDetail(id: string): Promise<CandidateDetailData | null> {
+  if (!UUID_PATTERN.test(id)) return null;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
