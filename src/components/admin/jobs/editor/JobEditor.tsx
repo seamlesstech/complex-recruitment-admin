@@ -10,7 +10,7 @@ import { EmploymentPaySection } from "./EmploymentPaySection";
 import { VacancyContentSection } from "./VacancyContentSection";
 import { ApplicationSettingsSection } from "./ApplicationSettingsSection";
 import { JobEditorSidebar } from "./JobEditorSidebar";
-import { createJobAction, updateJobAction } from "@/lib/jobs/actions";
+import { closeJobAction, createJobAction, updateJobAction } from "@/lib/jobs/actions";
 import type { OptionItem } from "@/lib/jobs/types";
 import {
   formatDateDisplay,
@@ -18,6 +18,14 @@ import {
   type JobDraftErrors,
 } from "@/lib/mock/job-editor";
 import type { JobStatus } from "@/lib/mock/types";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
+
+const feedbackCopy: Record<"publish" | "draft" | "save", string> = {
+  publish: "Job published.",
+  draft: "Draft saved.",
+  save: "Job saved.",
+};
 
 function validateDraft(draft: JobDraft): JobDraftErrors {
   const errors: JobDraftErrors = {};
@@ -55,6 +63,7 @@ export function JobEditor({
   ownerOptions,
 }: JobEditorProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [draft, setDraft] = useState<JobDraft>(initialDraft);
   const [employerOptions, setEmployerOptions] = useState(initialEmployerOptions);
   const [showErrors, setShowErrors] = useState(false);
@@ -63,6 +72,8 @@ export function JobEditor({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const errors = showErrors ? validateDraft(draft) : {};
   const hasErrors = Object.keys(errors).length > 0;
@@ -97,11 +108,28 @@ export function JobEditor({
     }
 
     if (mode === "create") {
+      showToast("success", "Job created.");
       router.push(`/jobs/${result.id}/edit`);
       return;
     }
 
     setFeedback(feedbackKind);
+    showToast("success", feedbackCopy[feedbackKind]);
+    router.refresh();
+  }
+
+  async function handleConfirmClose() {
+    if (!jobId) return;
+    setIsClosing(true);
+    const result = await closeJobAction(jobId);
+    setIsClosing(false);
+    setConfirmingClose(false);
+
+    if (!result.ok) {
+      showToast("error", result.error);
+      return;
+    }
+    showToast("success", "Job closed.");
     router.refresh();
   }
 
@@ -213,8 +241,20 @@ export function JobEditor({
           onSaveDraft={handleSaveDraft}
           onCancel={handleCancel}
           isSubmitting={isSubmitting}
+          onCloseJob={() => setConfirmingClose(true)}
         />
       </div>
+
+      {confirmingClose ? (
+        <ConfirmDialog
+          title="Close this job?"
+          description="Closing the job will stop new applications and remove it from the public website. Existing applications will remain available."
+          confirmLabel="Close job"
+          isConfirming={isClosing}
+          onConfirm={handleConfirmClose}
+          onCancel={() => setConfirmingClose(false)}
+        />
+      ) : null}
     </div>
   );
 }

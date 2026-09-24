@@ -22,3 +22,5 @@ export type JobEditorResult =
 export type CreateEmployerResult =
   | { ok: true; employer: OptionItem }
   | { ok: false; error: string };
+
+export type CloseJobResult = { ok: true } | { ok: false; error: string };

@@ -16,7 +16,13 @@ import {
   workPatternToDb,
   workplaceTypeToDb,
 } from "./enums";
-import type { CreateEmployerResult, JobEditorData, JobEditorResult, OptionItem } from "./types";
+import type {
+  CloseJobResult,
+  CreateEmployerResult,
+  JobEditorData,
+  JobEditorResult,
+  OptionItem,
+} from "./types";
 
 export { getOwnerOptions, getSectorOptions } from "@/lib/lookups/queries";
 
@@ -374,6 +380,44 @@ export async function updateJob(
   }
 
   return { ok: true, id: data.id, reference: data.reference };
+}
+
+/**
+ * The single canonical close-job operation — the Jobs list three-dot menu
+ * and the Job Detail "Close job" CTA both call this via closeJobAction, so
+ * there is exactly one code path that can transition a job to Closed.
+ *
+ * publish_on_website is cleared at the same time: status = 'open' is
+ * already required for a job to appear in public_jobs, so this isn't what
+ * removes it from the site, but leaving the flag on would silently
+ * re-publish the job the moment anyone re-opened it in future without
+ * noticing. Clearing it here makes re-publication an explicit decision.
+ *
+ * Only a job that is genuinely still Open can be closed — the update's
+ * `.eq("status", "open")` guards against a stale client racing a second
+ * close (or closing an already-Closed/Draft job) into a false "success".
+ */
+export async function closeJob(id: string): Promise<CloseJobResult> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .update({ status: "closed", publish_on_website: false })
+    .eq("id", id)
+    .eq("status", "open")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("closeJob failed:", error);
+    return { ok: false, error: "Could not close this job. Please try again." };
+  }
+
+  if (!data) {
+    return { ok: false, error: "This job is no longer open, so it can't be closed." };
+  }
+
+  return { ok: true };
 }
 
 export async function createEmployer(

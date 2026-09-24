@@ -2,12 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import type { JobStatus } from "@/lib/mock/types";
+import { closeJobAction } from "@/lib/jobs/actions";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 interface MenuAction {
   label: string;
   href?: string;
+  /** Non-navigation actions wired to real behavior. Currently only "close". */
+  kind?: "close";
 }
 
 function buildActionsByStatus(jobId: string): Record<JobStatus, MenuAction[]> {
@@ -16,7 +22,7 @@ function buildActionsByStatus(jobId: string): Record<JobStatus, MenuAction[]> {
     Open: [
       { label: "View / Edit", href: editHref },
       { label: "Duplicate" },
-      { label: "Close job" },
+      { label: "Close job", kind: "close" },
     ],
     Draft: [
       { label: "Edit", href: editHref },
@@ -39,7 +45,11 @@ export function RowActionMenu({
   jobId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +74,20 @@ export function RowActionMenu({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  async function handleConfirmClose() {
+    setIsClosing(true);
+    const result = await closeJobAction(jobId);
+    setIsClosing(false);
+    setConfirmingClose(false);
+
+    if (!result.ok) {
+      showToast("error", result.error);
+      return;
+    }
+    showToast("success", "Job closed.");
+    router.refresh();
+  }
 
   const actions = buildActionsByStatus(jobId)[status];
 
@@ -110,7 +134,10 @@ export function RowActionMenu({
                 key={action.label}
                 type="button"
                 role="menuitem"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  if (action.kind === "close") setConfirmingClose(true);
+                }}
                 className="block w-full px-3 py-2 text-left text-sm text-fg transition-colors duration-150 hover:bg-hover"
               >
                 {action.label}
@@ -118,6 +145,17 @@ export function RowActionMenu({
             ),
           )}
         </div>
+      ) : null}
+
+      {confirmingClose ? (
+        <ConfirmDialog
+          title="Close this job?"
+          description="Closing the job will stop new applications and remove it from the public website. Existing applications will remain available."
+          confirmLabel="Close job"
+          isConfirming={isClosing}
+          onConfirm={handleConfirmClose}
+          onCancel={() => setConfirmingClose(false)}
+        />
       ) : null}
     </div>
   );

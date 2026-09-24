@@ -24,6 +24,7 @@ interface JobEditorSidebarProps {
   onSaveDraft: () => void;
   onCancel: () => void;
   isSubmitting: boolean;
+  onCloseJob: () => void;
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -59,6 +60,7 @@ export function JobEditorSidebar({
   onSaveDraft,
   onCancel,
   isSubmitting,
+  onCloseJob,
 }: JobEditorSidebarProps) {
   return (
     <aside className="flex flex-col gap-5 rounded-lg border border-surface-secondary bg-card p-5 xl:sticky xl:top-[76px]">
@@ -66,6 +68,22 @@ export function JobEditorSidebar({
         <span className="text-sm font-medium text-fg">Status</span>
         <StatusBadge status={status} />
       </div>
+
+      {status === "Open" ? (
+        <button
+          type="button"
+          onClick={onCloseJob}
+          disabled={isSubmitting}
+          className="flex h-9 items-center justify-center rounded-md border border-red-line bg-red-tint text-sm font-medium text-complex-red transition-colors duration-150 hover:bg-red-tint/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Close job
+        </button>
+      ) : status === "Closed" ? (
+        <p className="rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
+          This job is closed — it no longer accepts applications and isn&apos;t
+          listed on the website.
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-1.5 border-t border-surface-secondary pt-5">
         <FormField label="Assigned recruiter" htmlFor="job-owner">
