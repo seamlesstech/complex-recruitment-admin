@@ -1,4 +1,4 @@
-export type SettingsSection = "profile" | "appearance" | "notifications";
+export type SettingsSection = "profile" | "appearance" | "notifications" | "security";
 
 interface SettingsNavItem {
   key: SettingsSection;
@@ -9,6 +9,7 @@ const settingsNavItems: SettingsNavItem[] = [
   { key: "profile", label: "My profile" },
   { key: "appearance", label: "Appearance" },
   { key: "notifications", label: "Notifications" },
+  { key: "security", label: "Security" },
 ];
 
 interface SettingsNavProps {

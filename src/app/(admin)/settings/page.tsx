@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppearanceSection } from "@/components/admin/settings/AppearanceSection";
 import { NotificationsSection } from "@/components/admin/settings/NotificationsSection";
 import { ProfileSection } from "@/components/admin/settings/ProfileSection";
+import { SecuritySection } from "@/components/admin/settings/SecuritySection";
 import { SettingsNav, type SettingsSection } from "@/components/admin/settings/SettingsNav";
 import { useCurrentUser } from "@/components/admin/CurrentUserProvider";
 import { initialNotificationPreferences } from "@/lib/mock/settings";
@@ -81,6 +82,8 @@ export default function SettingsPage() {
               showSavedFeedback={preferencesSaved}
             />
           ) : null}
+
+          {activeSection === "security" ? <SecuritySection /> : null}
         </div>
       </div>
     </div>
