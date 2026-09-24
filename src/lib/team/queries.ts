@@ -1,20 +1,22 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
+import { getRoleLabel, getStatusLabel } from "@/lib/auth/roles";
 import type { TeamMember } from "@/lib/mock/types";
 import type { TeamWorkload } from "./types";
 
 /**
- * Real operational workload for the Team screen.
- *
- * The Team ROSTER is still the preview-only mock list (lib/mock/team.ts):
- * Team/account management isn't migrated, and fictional members aren't
- * turned into database accounts. The WORKLOAD column, however, is now real:
- * it counts non-archived, still-open records whose owner_id is a real
- * profile, across all four live operational tables. A roster entry is
- * matched to a real profile by email, falling back to exact display name;
- * an entry with no matching profile genuinely owns nothing and shows zero.
- *
- * "Still open" mirrors each screen's own terminal statuses.
+ * Real Team roster + workload. The roster comes straight from
+ * public.profiles (RLS: profiles_select_active only returns rows to an
+ * active caller, and returns every profile regardless of that row's own
+ * status — see rls_foundation.sql's profiles_select_active policy, which
+ * gates on the CALLER's status, not the target row's). Workload is real,
+ * live ownership data across the four operational tables, keyed directly by
+ * profiles.id (== the TeamMember.id every roster row already carries), with
+ * "still open" mirroring each screen's own terminal statuses. Invited and
+ * Disabled members always show zero workload by construction: only rows
+ * whose id matches a real owner_id count, and no code path invents a number
+ * for an id that never appears as an owner_id.
  */
 
 const EMPTY_WORKLOAD: TeamWorkload = {
@@ -24,6 +26,66 @@ const EMPTY_WORKLOAD: TeamWorkload = {
   enquiries: 0,
   total: 0,
 };
+
+type ProfileRow = {
+  id: string;
+  display_name: string;
+  email: string;
+  initials: string | null;
+  role: Database["public"]["Enums"]["profile_role"];
+  status: Database["public"]["Enums"]["profile_status"];
+  invited_at: string | null;
+  joined_at: string | null;
+};
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function describeActivity(row: ProfileRow): string {
+  if (row.status === "invited") {
+    return row.invited_at ? `Invited ${formatDate(row.invited_at)}` : "Invited";
+  }
+  if (row.joined_at) return `Joined ${formatDate(row.joined_at)}`;
+  return "—";
+}
+
+function mapProfileToTeamMember(row: ProfileRow): TeamMember {
+  return {
+    id: row.id,
+    name: row.display_name,
+    email: row.email,
+    initials: row.initials || initialsFromName(row.display_name),
+    role: getRoleLabel(row.role) as TeamMember["role"],
+    status: getStatusLabel(row.status) as TeamMember["status"],
+    lastActive: describeActivity(row),
+    joinedAt: row.joined_at,
+    invitedAt: row.invited_at,
+  };
+}
+
+export async function getTeamMembers(): Promise<TeamMember[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, email, initials, role, status, invited_at, joined_at")
+    .order("display_name", { ascending: true });
+
+  if (error) {
+    console.error("getTeamMembers failed:", error);
+    throw new Error("Could not load the team.");
+  }
+
+  return (data as ProfileRow[]).map(mapProfileToTeamMember);
+}
 
 function tally(rows: { owner_id: string | null }[]): Map<string, number> {
   const counts = new Map<string, number>();
@@ -38,8 +100,7 @@ export async function getTeamWorkloadByMemberId(
 ): Promise<Record<string, TeamWorkload>> {
   const supabase = await createClient();
 
-  const [profiles, jobs, applications, staffRequests, enquiries] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, email"),
+  const [jobs, applications, staffRequests, enquiries] = await Promise.all([
     supabase
       .from("jobs")
       .select("owner_id")
@@ -66,8 +127,7 @@ export async function getTeamWorkloadByMemberId(
       .not("status", "in", "(converted,closed)"),
   ]);
 
-  const error =
-    profiles.error ?? jobs.error ?? applications.error ?? staffRequests.error ?? enquiries.error;
+  const error = jobs.error ?? applications.error ?? staffRequests.error ?? enquiries.error;
   if (error) {
     console.error("getTeamWorkloadByMemberId failed:", error);
     throw new Error("Could not load team workload.");
@@ -78,31 +138,19 @@ export async function getTeamWorkloadByMemberId(
   const staffRequestCounts = tally(staffRequests.data ?? []);
   const enquiryCounts = tally(enquiries.data ?? []);
 
-  const profileRows = profiles.data ?? [];
-  const profileIdByEmail = new Map(
-    profileRows.map((p) => [p.email.toLowerCase(), p.id] as const),
-  );
-  const profileIdByName = new Map(profileRows.map((p) => [p.display_name, p.id] as const));
-
   return Object.fromEntries(
     members.map((member) => {
-      const profileId =
-        profileIdByEmail.get(member.email.toLowerCase()) ?? profileIdByName.get(member.name);
-      if (!profileId) return [member.id, EMPTY_WORKLOAD];
-
       const workload = {
-        jobs: jobCounts.get(profileId) ?? 0,
-        applications: applicationCounts.get(profileId) ?? 0,
-        staffRequests: staffRequestCounts.get(profileId) ?? 0,
-        enquiries: enquiryCounts.get(profileId) ?? 0,
+        jobs: jobCounts.get(member.id) ?? 0,
+        applications: applicationCounts.get(member.id) ?? 0,
+        staffRequests: staffRequestCounts.get(member.id) ?? 0,
+        enquiries: enquiryCounts.get(member.id) ?? 0,
       };
       return [
         member.id,
-        {
-          ...workload,
-          total:
-            workload.jobs + workload.applications + workload.staffRequests + workload.enquiries,
-        },
+        member.status === "Active"
+          ? { ...workload, total: workload.jobs + workload.applications + workload.staffRequests + workload.enquiries }
+          : EMPTY_WORKLOAD,
       ];
     }),
   );

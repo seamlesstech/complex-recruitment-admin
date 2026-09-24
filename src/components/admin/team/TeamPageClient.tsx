@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { UserPlus } from "lucide-react";
 import {
   SummaryFilters,
   type SummaryFilterItem,
@@ -8,8 +9,8 @@ import {
 import { EmptyState } from "@/components/admin/EmptyState";
 import { TeamToolbar } from "@/components/admin/team/TeamToolbar";
 import { TeamTable } from "@/components/admin/team/TeamTable";
+import { InviteTeamMemberModal } from "@/components/admin/team/InviteTeamMemberModal";
 import { useCurrentUser } from "@/components/admin/CurrentUserProvider";
-import { teamSummaryDisplayCounts } from "@/lib/mock/team";
 import type { TeamMember, TeamMemberStatus } from "@/lib/mock/types";
 import type { TeamWorkload } from "@/lib/team/types";
 
@@ -19,7 +20,7 @@ const DEFAULT_STATUS_SELECT = "All statuses";
 const DEFAULT_ROLE = "All roles";
 
 interface TeamPageClientProps {
-  /** Preview-only roster (Team management isn't migrated yet). */
+  /** Real roster, sourced from public.profiles — see lib/team/queries.ts. */
   teamMembers: TeamMember[];
   /** Real workload per roster entry — see lib/team/queries.ts. */
   workloadByMemberId: Record<string, TeamWorkload>;
@@ -29,28 +30,29 @@ export function TeamPageClient({
   teamMembers,
   workloadByMemberId,
 }: TeamPageClientProps) {
-  const { email: currentUserEmail } = useCurrentUser();
+  const currentUser = useCurrentUser();
   const [statusFilter, setStatusFilter] = useState<TeamStatusFilter>("All");
   const [roleFilter, setRoleFilter] = useState(DEFAULT_ROLE);
   const [search, setSearch] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
+
+  const canManageTeam = currentUser.role === "super_admin";
+
+  const summaryCounts = useMemo(
+    () => ({
+      all: teamMembers.length,
+      active: teamMembers.filter((m) => m.status === "Active").length,
+      invited: teamMembers.filter((m) => m.status === "Invited").length,
+      disabled: teamMembers.filter((m) => m.status === "Disabled").length,
+    }),
+    [teamMembers],
+  );
 
   const summaryItems: SummaryFilterItem<TeamStatusFilter>[] = [
-    { value: "All", label: "All", count: teamSummaryDisplayCounts.all },
-    {
-      value: "Active",
-      label: "Active",
-      count: teamSummaryDisplayCounts.active,
-    },
-    {
-      value: "Invited",
-      label: "Invited",
-      count: teamSummaryDisplayCounts.invited,
-    },
-    {
-      value: "Disabled",
-      label: "Disabled",
-      count: teamSummaryDisplayCounts.disabled,
-    },
+    { value: "All", label: "All", count: summaryCounts.all },
+    { value: "Active", label: "Active", count: summaryCounts.active },
+    { value: "Invited", label: "Invited", count: summaryCounts.invited },
+    { value: "Disabled", label: "Disabled", count: summaryCounts.disabled },
   ];
 
   const filteredMembers = teamMembers.filter((member) => {
@@ -91,11 +93,23 @@ export function TeamPageClient({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Team</h1>
-        <p className="text-sm text-fg-muted">
-          Review team access, roles and operational ownership.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Team</h1>
+          <p className="text-sm text-fg-muted">
+            Review team access, roles and operational ownership.
+          </p>
+        </div>
+        {canManageTeam ? (
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="flex h-10 items-center justify-center gap-2 rounded-md bg-complex-red px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-complex-red/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red"
+          >
+            <UserPlus size={16} />
+            Invite team member
+          </button>
+        ) : null}
       </div>
 
       <SummaryFilters
@@ -119,8 +133,9 @@ export function TeamPageClient({
       {filteredMembers.length > 0 ? (
         <TeamTable
           members={filteredMembers}
-          currentUserEmail={currentUserEmail}
+          currentUserId={currentUser.id}
           workloadByMemberId={workloadByMemberId}
+          canManageTeam={canManageTeam}
         />
       ) : (
         <EmptyState
@@ -129,6 +144,8 @@ export function TeamPageClient({
           onReset={handleReset}
         />
       )}
+
+      {inviteOpen ? <InviteTeamMemberModal onClose={() => setInviteOpen(false)} /> : null}
     </div>
   );
 }

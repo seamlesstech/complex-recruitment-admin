@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/admin/Avatar";
 import {
   Table,
@@ -9,6 +13,8 @@ import {
 } from "@/components/admin/table";
 import type { TeamWorkload } from "@/lib/team/types";
 import type { TeamMember } from "@/lib/mock/types";
+import { resendInvitationAction } from "@/lib/team/actions";
+import { useToast } from "@/components/ui/Toast";
 import { TeamRoleBadge } from "./TeamRoleBadge";
 import { TeamStatusBadge } from "./TeamStatusBadge";
 
@@ -63,20 +69,40 @@ function WorkloadCell({ workload }: { workload: TeamWorkload | undefined }) {
 
 export function TeamTable({
   members,
-  currentUserEmail,
+  currentUserId,
   workloadByMemberId,
+  canManageTeam,
 }: {
   members: TeamMember[];
   /**
-   * The real authenticated profile's email — the mock dataset's own
-   * `isCurrentUser` flag is a static seed value and would silently go stale
-   * the moment a different real account logs in, so "You" is computed here
-   * against the live session instead of trusted from the mock record.
+   * The real authenticated profile's id — "You" is computed here by
+   * identity (profiles.id) against the live session, never by matching
+   * display name, email text, or row position, which could mislabel a
+   * different person entirely if a name/email were ever reused.
    */
-  currentUserEmail: string;
+  currentUserId: string;
   /** Real per-member workload, computed server-side from live owner_id data. */
   workloadByMemberId: Record<string, TeamWorkload>;
+  /** Super Admin only — gates the "Resend invitation" row action. */
+  canManageTeam: boolean;
 }) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  async function handleResend(member: TeamMember) {
+    setResendingId(member.id);
+    const result = await resendInvitationAction(member.id);
+    setResendingId(null);
+
+    if (!result.ok) {
+      showToast("error", result.error);
+      return;
+    }
+    showToast("success", "Invitation resent.");
+    router.refresh();
+  }
+
   return (
     <div className="rounded-lg border border-surface-secondary bg-card p-4">
       <Table minWidthClassName="min-w-[840px]">
@@ -88,6 +114,9 @@ export function TeamTable({
           <TableHeaderCell className="whitespace-nowrap">
             Last active
           </TableHeaderCell>
+          {canManageTeam ? (
+            <TableHeaderCell className="whitespace-nowrap">Actions</TableHeaderCell>
+          ) : null}
         </TableHead>
         <TableBody>
           {members.map((member) => (
@@ -98,8 +127,7 @@ export function TeamTable({
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5 font-medium text-fg">
                       {member.name}
-                      {member.email.toLowerCase() ===
-                      currentUserEmail.toLowerCase() ? (
+                      {member.id === currentUserId ? (
                         <span className="text-xs font-normal text-fg-muted">
                           · You
                         </span>
@@ -123,6 +151,20 @@ export function TeamTable({
               <TableCell className="whitespace-nowrap text-fg-muted">
                 {member.lastActive}
               </TableCell>
+              {canManageTeam ? (
+                <TableCell className="whitespace-nowrap">
+                  {member.status === "Invited" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleResend(member)}
+                      disabled={resendingId === member.id}
+                      className="rounded text-xs font-medium text-complex-red outline-none transition-colors duration-150 hover:text-complex-red/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {resendingId === member.id ? "Resending…" : "Resend invitation"}
+                    </button>
+                  ) : null}
+                </TableCell>
+              ) : null}
             </TableRow>
           ))}
         </TableBody>

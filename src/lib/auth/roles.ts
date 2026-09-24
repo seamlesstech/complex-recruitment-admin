@@ -21,3 +21,21 @@ const ROLE_LABELS: Record<ProfileRole, string> = {
 export function getRoleLabel(role: ProfileRole): string {
   return ROLE_LABELS[role];
 }
+
+const STATUS_LABELS: Record<ProfileStatus, string> = {
+  active: "Active",
+  invited: "Invited",
+  disabled: "Disabled",
+};
+
+export function getStatusLabel(status: ProfileStatus): string {
+  return STATUS_LABELS[status];
+}
+
+/** The full canonical role vocabulary — the only values a role picker may offer. */
+export const ALL_PROFILE_ROLES: ProfileRole[] = [
+  "super_admin",
+  "admin_manager",
+  "recruiter",
+  "viewer",
+];

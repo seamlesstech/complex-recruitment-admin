@@ -72,25 +72,25 @@ export interface NotificationPreferenceDefinition {
 }
 
 /**
- * Frontend-only role vocabulary for the Team screen. Deliberately separate
- * from any operational status type — this is not enforced anywhere yet and
- * will be superseded by the real auth/RBAC role model.
+ * UI display-label vocabulary for the Team screen — the same values as
+ * public.profiles.role (see lib/auth/roles.ts's ROLE_LABELS), just under a
+ * name that matches this screen's other UI-vocabulary types (JobStatus,
+ * etc). Real data, sourced from lib/team/queries.ts.
  */
 export type TeamRole = "Super Admin" | "Admin / Manager" | "Recruiter" | "Viewer";
 
 /**
  * A team member's account state in Complex Admin itself — distinct from any
- * operational status (job/application/etc). "Invited" and "Disabled" are
- * mock presentation only; no invitation is actually sent and no account is
- * actually deactivated.
+ * operational status (job/application/etc). Display-label equivalent of
+ * public.profiles.status.
  */
 export type TeamMemberStatus = "Active" | "Invited" | "Disabled";
 
 /**
- * An internal Complex Admin user. Deliberately separate from the operational
- * `owner`/`assignee` strings used across Jobs/Applications/Staff Requests/
- * Enquiries — `operationalOwnerAliases` is the mock-only bridge between the
- * two until a real user_id links them.
+ * A real internal Complex Admin user, sourced from public.profiles (see
+ * lib/team/queries.ts). `id` is the real profiles.id (= auth.users.id) —
+ * used both to key real workload data and to determine "You" by identity,
+ * never by matching name/email/position.
  */
 export interface TeamMember {
   id: string;
@@ -99,13 +99,12 @@ export interface TeamMember {
   initials: string;
   role: TeamRole;
   status: TeamMemberStatus;
-  /** Display string, e.g. "Now", "12 min ago", "Not joined yet". */
+  /** Display string derived from real joined_at/invited_at — never fabricated. */
   lastActive: string;
   /** ISO date, e.g. "2026-08-28" — null if not yet joined. */
   joinedAt: string | null;
   /** ISO date, e.g. "2026-09-18" — null if not currently invited. */
   invitedAt: string | null;
-  isCurrentUser: boolean;
 }
 
 export interface Metric {

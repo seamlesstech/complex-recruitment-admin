@@ -3,7 +3,7 @@ import { FilterSelect } from "@/components/admin/FilterSelect";
 import {
   teamRoleFilterOptions,
   teamStatusFilterOptions,
-} from "@/lib/mock/team";
+} from "@/lib/team/constants";
 
 interface TeamToolbarProps {
   search: string;

@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { getRoleLabel, type ProfileRole } from "@/lib/auth/roles";
 
 export interface CurrentUser {
+  id: string;
   displayName: string;
   email: string;
   initials: string;
@@ -24,6 +25,7 @@ export function CurrentUserProvider({
   children,
 }: {
   profile: {
+    id: string;
     displayName: string;
     email: string;
     initials: string | null;
@@ -33,13 +35,14 @@ export function CurrentUserProvider({
 }) {
   const value = useMemo<CurrentUser>(
     () => ({
+      id: profile.id,
       displayName: profile.displayName,
       email: profile.email,
       initials: profile.initials || profile.displayName.slice(0, 2).toUpperCase(),
       role: profile.role,
       roleLabel: getRoleLabel(profile.role),
     }),
-    [profile.displayName, profile.email, profile.initials, profile.role],
+    [profile.id, profile.displayName, profile.email, profile.initials, profile.role],
   );
 
   return (

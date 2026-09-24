@@ -8,6 +8,7 @@ import { CurrentUserProvider } from "./CurrentUserProvider";
 import type { ProfileRole } from "@/lib/auth/roles";
 
 interface AdminShellProfile {
+  id: string;
   displayName: string;
   email: string;
   initials: string | null;
