@@ -9,6 +9,7 @@ import { SelectInput } from "@/components/admin/forms/SelectInput";
 import { createEmployerAction } from "@/lib/jobs/actions";
 import type { OptionItem } from "@/lib/jobs/types";
 import type { JobDraftSectionProps } from "@/lib/mock/job-editor";
+import { useToast } from "@/components/ui/Toast";
 
 const CREATE_EMPLOYER_VALUE = "__create_employer__";
 
@@ -26,6 +27,7 @@ export function JobDetailsSection({
   employerOptions,
   onEmployerCreated,
 }: JobDetailsSectionProps) {
+  const { showToast } = useToast();
   const [creatingEmployer, setCreatingEmployer] = useState(false);
   const [newEmployerName, setNewEmployerName] = useState("");
   const [newEmployerLocation, setNewEmployerLocation] = useState("");
@@ -53,6 +55,7 @@ export function JobDetailsSection({
 
     if (!result.ok) {
       setCreateError(result.error);
+      showToast("error", result.error);
       return;
     }
 
@@ -61,6 +64,7 @@ export function JobDetailsSection({
     setCreatingEmployer(false);
     setNewEmployerName("");
     setNewEmployerLocation("");
+    showToast("success", "Employer created.");
   }
 
   function handleCancelCreateEmployer() {

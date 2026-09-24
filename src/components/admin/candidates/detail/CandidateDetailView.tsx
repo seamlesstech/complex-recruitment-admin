@@ -13,6 +13,7 @@ import { CandidateDetailSidebar } from "./CandidateDetailSidebar";
 import { addCandidateNoteAction, updateCandidateDetailAction } from "@/lib/candidates/actions";
 import type { CandidateDetailData, OptionItem } from "@/lib/candidates/types";
 import type { CandidateAvailability } from "@/lib/mock/types";
+import { useToast } from "@/components/ui/Toast";
 
 export function CandidateDetailView({
   detail,
@@ -22,6 +23,7 @@ export function CandidateDetailView({
   ownerOptions: OptionItem[];
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const { candidate, registeredLabel, applications, documents, notes, activity } = detail;
 
   const [availability, setAvailability] = useState<CandidateAvailability>(
@@ -56,9 +58,11 @@ export function CandidateDetailView({
 
     if (!result.ok) {
       setSaveError(result.error);
+      showToast("error", result.error);
       return;
     }
     setShowSaveFeedback(true);
+    showToast("success", "Candidate updated.");
     router.refresh();
   }
 

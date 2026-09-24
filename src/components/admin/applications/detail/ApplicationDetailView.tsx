@@ -17,6 +17,7 @@ import {
 } from "@/lib/applications/actions";
 import type { ApplicationDetailData, OptionItem } from "@/lib/applications/types";
 import type { ApplicationStatus } from "@/lib/mock/types";
+import { useToast } from "@/components/ui/Toast";
 
 export function ApplicationDetailView({
   detail,
@@ -26,6 +27,7 @@ export function ApplicationDetailView({
   ownerOptions: OptionItem[];
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const { application, candidate, vacancy, documents, notes, activity } = detail;
 
   const [status, setStatus] = useState<ApplicationStatus>(application.status);
@@ -58,9 +60,11 @@ export function ApplicationDetailView({
 
     if (!result.ok) {
       setSaveError(result.error);
+      showToast("error", result.error);
       return;
     }
     setShowSaveFeedback(true);
+    showToast("success", "Application updated.");
     router.refresh();
   }
 

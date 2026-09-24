@@ -18,6 +18,7 @@ import {
 } from "@/lib/staff-requests/actions";
 import type { OptionItem, StaffRequestDetailData } from "@/lib/staff-requests/types";
 import type { StaffRequestStatus, StaffRequestUrgency } from "@/lib/mock/types";
+import { useToast } from "@/components/ui/Toast";
 
 export function StaffRequestDetailView({
   detail,
@@ -27,6 +28,7 @@ export function StaffRequestDetailView({
   ownerOptions: OptionItem[];
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const { request, contact, requirement, relatedJobs, notes, activity } = detail;
 
   const [status, setStatus] = useState<StaffRequestStatus>(request.status);
@@ -71,9 +73,11 @@ export function StaffRequestDetailView({
 
     if (!result.ok) {
       setSaveError(result.error);
+      showToast("error", result.error);
       return;
     }
     setShowSaveFeedback(true);
+    showToast("success", "Staff request updated.");
     router.refresh();
   }
 

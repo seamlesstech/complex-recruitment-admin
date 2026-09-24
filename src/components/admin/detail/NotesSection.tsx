@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DetailCard } from "./DetailCard";
 import { TextArea } from "@/components/admin/forms/TextArea";
+import { useToast } from "@/components/ui/Toast";
 import type { NoteRecord } from "@/lib/mock/detail-shared";
 
 interface NotesSectionProps {
@@ -21,6 +22,7 @@ export function NotesSection({
   initialNotes,
   onAddNote,
 }: NotesSectionProps) {
+  const { showToast } = useToast();
   const [notes, setNotes] = useState(initialNotes);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,10 +40,12 @@ export function NotesSection({
 
     if (!result.ok) {
       setError(result.error);
+      showToast("error", result.error);
       return;
     }
     setNotes((previous) => [...previous, result.note]);
     setDraft("");
+    showToast("success", "Note added.");
   }
 
   return (
