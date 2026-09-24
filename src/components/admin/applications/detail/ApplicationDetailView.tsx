@@ -103,6 +103,7 @@ export function ApplicationDetailView({
             application={application}
             vacancy={vacancy}
             source={detail.source}
+            applicantMessage={detail.applicantMessage}
           />
           <DocumentsSection documents={documents} />
           <NotesSection

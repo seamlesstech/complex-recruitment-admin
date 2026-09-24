@@ -263,7 +263,7 @@ export async function getApplicationForDetail(id: string): Promise<ApplicationDe
   const { data: row, error } = await supabase
     .from("applications")
     .select(`
-      id, reference, status, source, submitted_at, read_at, owner_id,
+      id, reference, status, source, submitted_at, read_at, owner_id, applicant_message,
       candidate:candidates!candidate_id(id, reference, full_name, email, phone, location),
       job:jobs!job_id(
         id, reference, title, location, employment_type, work_pattern, pay_type, pay_from, pay_to, workplace_type,
@@ -313,6 +313,7 @@ export async function getApplicationForDetail(id: string): Promise<ApplicationDe
     ownerId: row.owner_id,
     submittedLabel: formatDateTime(row.submitted_at),
     source: row.source ?? "Not recorded",
+    applicantMessage: row.applicant_message,
     candidate: {
       id: candidate.id,
       reference: candidate.reference,

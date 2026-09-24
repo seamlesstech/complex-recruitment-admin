@@ -7,10 +7,12 @@ export function ApplicationSection({
   application,
   vacancy,
   source,
+  applicantMessage,
 }: {
   application: CandidateApplication;
   vacancy: ApplicationVacancy;
   source: string;
+  applicantMessage: string | null;
 }) {
   return (
     <DetailCard
@@ -35,6 +37,13 @@ export function ApplicationSection({
         </DetailField>
         <DetailField label="Pay">{vacancy.pay}</DetailField>
         <DetailField label="Work pattern">{vacancy.workPattern}</DetailField>
+        <div className="sm:col-span-2">
+          <DetailField label="Applicant message">
+            <span className="whitespace-pre-line">
+              {applicantMessage ?? "No message provided"}
+            </span>
+          </DetailField>
+        </div>
       </dl>
     </DetailCard>
   );

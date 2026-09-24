@@ -31,6 +31,8 @@ export interface ApplicationDetailData {
   /** Date + time of submission, for the page header. */
   submittedLabel: string;
   source: string;
+  /** Optional note the applicant wrote on the public form (null = none). */
+  applicantMessage: string | null;
   candidate: ApplicationCandidate;
   vacancy: ApplicationVacancy;
   documents: DocumentRecord[];

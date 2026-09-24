@@ -187,6 +187,7 @@ export type Database = {
       }
       applications: {
         Row: {
+          applicant_message: string | null
           archived_at: string | null
           candidate_id: string
           created_at: string
@@ -201,6 +202,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applicant_message?: string | null
           archived_at?: string | null
           candidate_id: string
           created_at?: string
@@ -215,6 +217,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applicant_message?: string | null
           archived_at?: string | null
           candidate_id?: string
           created_at?: string
@@ -1473,8 +1476,8 @@ export type Database = {
           p_full_name: string
           p_job_reference: string
           p_location?: string
+          p_message?: string
           p_phone: string
-          p_sector_id?: string
           p_source?: string
         }
         Returns: {
