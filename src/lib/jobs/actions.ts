@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireActiveProfile } from "@/lib/auth/profile";
 import type { JobDraft } from "@/lib/mock/job-editor";
 import type { JobStatus } from "@/lib/mock/types";
-import { closeJob, createEmployer, createJob, updateJob } from "./queries";
-import type { CloseJobResult, CreateEmployerResult, JobEditorResult } from "./types";
+import { closeJob, createEmployer, createJob, reopenJob, updateJob } from "./queries";
+import type { CreateEmployerResult, JobEditorResult, JobLifecycleResult } from "./types";
 
 /**
  * Every mutating Jobs action re-verifies the caller via requireActiveProfile()
@@ -49,9 +49,23 @@ export async function updateJobAction(
  * recruiter who owns/has no owner on the job); this action does not widen
  * that in any way.
  */
-export async function closeJobAction(id: string): Promise<CloseJobResult> {
+export async function closeJobAction(id: string): Promise<JobLifecycleResult> {
   await requireActiveProfile();
   const result = await closeJob(id);
+  if (result.ok) {
+    revalidatePath("/jobs");
+    revalidatePath(`/jobs/${id}/edit`);
+  }
+  return result;
+}
+
+/**
+ * The one canonical reopen-job Server Action — same authorization shape as
+ * closeJobAction, called from the same two entry points.
+ */
+export async function reopenJobAction(id: string): Promise<JobLifecycleResult> {
+  await requireActiveProfile();
+  const result = await reopenJob(id);
   if (result.ok) {
     revalidatePath("/jobs");
     revalidatePath(`/jobs/${id}/edit`);

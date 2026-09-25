@@ -17,10 +17,10 @@ import {
   workplaceTypeToDb,
 } from "./enums";
 import type {
-  CloseJobResult,
   CreateEmployerResult,
   JobEditorData,
   JobEditorResult,
+  JobLifecycleResult,
   OptionItem,
 } from "./types";
 
@@ -397,7 +397,7 @@ export async function updateJob(
  * `.eq("status", "open")` guards against a stale client racing a second
  * close (or closing an already-Closed/Draft job) into a false "success".
  */
-export async function closeJob(id: string): Promise<CloseJobResult> {
+export async function closeJob(id: string): Promise<JobLifecycleResult> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -415,6 +415,42 @@ export async function closeJob(id: string): Promise<CloseJobResult> {
 
   if (!data) {
     return { ok: false, error: "This job is no longer open, so it can't be closed." };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * The single canonical reopen-job operation — the counterpart to closeJob,
+ * called the same way from both the list menu and the Job Detail CTA via
+ * reopenJobAction. Only sets status back to 'open'; publish_on_website is
+ * deliberately left untouched (closeJob already forces it false, and only
+ * closeJob's own transition can produce a Closed row, so it is already
+ * false here) — reopening a historical vacancy must never make it publicly
+ * visible again on its own. Republishing is a separate, explicit decision
+ * via the existing publication toggle in the Job Editor.
+ *
+ * Only a job that is genuinely still Closed can be reopened — the same
+ * guarded-update shape as closeJob.
+ */
+export async function reopenJob(id: string): Promise<JobLifecycleResult> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .update({ status: "open" })
+    .eq("id", id)
+    .eq("status", "closed")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("reopenJob failed:", error);
+    return { ok: false, error: "Could not reopen this job. Please try again." };
+  }
+
+  if (!data) {
+    return { ok: false, error: "This job is no longer closed, so it can't be reopened." };
   }
 
   return { ok: true };

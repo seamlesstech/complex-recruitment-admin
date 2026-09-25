@@ -6,8 +6,17 @@ import { RecentApplicationsPanel } from "@/components/admin/dashboard/RecentAppl
 import { StaffRequestsPanel } from "@/components/admin/dashboard/StaffRequestsPanel";
 import { RecentActivityPanel } from "@/components/admin/dashboard/RecentActivityPanel";
 import { getDashboardData } from "@/lib/dashboard/queries";
+import { requireActiveProfile } from "@/lib/auth/profile";
 
 export default async function DashboardPage() {
+  // requireActiveProfile() is React cache()-memoized per request, so this
+  // is not a second database round trip — the (admin) layout already calls
+  // it once to authorize the request. Reusing it here (rather than a
+  // hardcoded name) is the same real, session-derived identity the Admin
+  // shell and Team's "You" already use, so the greeting can never show a
+  // stale or wrong person after switching accounts or on hard refresh.
+  const profile = await requireActiveProfile();
+
   // Every metric and panel below is live except Recent activity (the
   // activity_events feed isn't generated yet) — see lib/dashboard/queries.ts.
   const { metrics, attentionItems, recentApplications, recentStaffRequests } =
@@ -18,7 +27,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
-            Good morning, Moremi.
+            Good morning, {profile.displayName}.
           </h1>
           <p className="text-sm text-fg-muted">
             Here&rsquo;s what needs your attention across Complex Recruitment

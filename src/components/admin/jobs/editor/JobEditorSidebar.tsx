@@ -25,6 +25,7 @@ interface JobEditorSidebarProps {
   onCancel: () => void;
   isSubmitting: boolean;
   onCloseJob: () => void;
+  onReopenJob: () => void;
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -61,6 +62,7 @@ export function JobEditorSidebar({
   onCancel,
   isSubmitting,
   onCloseJob,
+  onReopenJob,
 }: JobEditorSidebarProps) {
   return (
     <aside className="flex flex-col gap-5 rounded-lg border border-surface-secondary bg-card p-5 xl:sticky xl:top-[76px]">
@@ -79,10 +81,20 @@ export function JobEditorSidebar({
           Close job
         </button>
       ) : status === "Closed" ? (
-        <p className="rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
-          This job is closed — it no longer accepts applications and isn&apos;t
-          listed on the website.
-        </p>
+        <div className="flex flex-col gap-2">
+          <p className="rounded-md bg-surface px-3 py-2 text-xs text-fg-muted">
+            This job is closed — it no longer accepts applications and isn&apos;t
+            listed on the website.
+          </p>
+          <button
+            type="button"
+            onClick={onReopenJob}
+            disabled={isSubmitting}
+            className="flex h-9 items-center justify-center rounded-md border border-surface-secondary bg-card text-sm font-medium text-fg transition-colors duration-150 hover:border-contrast hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-complex-red disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Reopen job
+          </button>
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-1.5 border-t border-surface-secondary pt-5">

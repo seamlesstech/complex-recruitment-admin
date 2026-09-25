@@ -5,15 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import type { JobStatus } from "@/lib/mock/types";
-import { closeJobAction } from "@/lib/jobs/actions";
+import { closeJobAction, reopenJobAction } from "@/lib/jobs/actions";
+import { jobLifecycleDialogCopy, type JobLifecycleKind } from "@/lib/jobs/lifecycle-copy";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 
 interface MenuAction {
   label: string;
   href?: string;
-  /** Non-navigation actions wired to real behavior. Currently only "close". */
-  kind?: "close";
+  /** Non-navigation actions wired to real behavior. */
+  kind?: JobLifecycleKind;
 }
 
 function buildActionsByStatus(jobId: string): Record<JobStatus, MenuAction[]> {
@@ -32,7 +33,7 @@ function buildActionsByStatus(jobId: string): Record<JobStatus, MenuAction[]> {
     Closed: [
       { label: "View", href: editHref },
       { label: "Duplicate" },
-      { label: "Reopen" },
+      { label: "Reopen job", kind: "reopen" },
     ],
   };
 }
@@ -45,8 +46,8 @@ export function RowActionMenu({
   jobId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [confirmingClose, setConfirmingClose] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+  const [confirmingKind, setConfirmingKind] = useState<JobLifecycleKind | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { showToast } = useToast();
@@ -75,17 +76,19 @@ export function RowActionMenu({
     };
   }, [open]);
 
-  async function handleConfirmClose() {
-    setIsClosing(true);
-    const result = await closeJobAction(jobId);
-    setIsClosing(false);
-    setConfirmingClose(false);
+  async function handleConfirm() {
+    if (!confirmingKind) return;
+    setIsSubmitting(true);
+    const result =
+      confirmingKind === "close" ? await closeJobAction(jobId) : await reopenJobAction(jobId);
+    setIsSubmitting(false);
+    setConfirmingKind(null);
 
     if (!result.ok) {
       showToast("error", result.error);
       return;
     }
-    showToast("success", "Job closed.");
+    showToast("success", jobLifecycleDialogCopy[confirmingKind].successMessage);
     router.refresh();
   }
 
@@ -136,7 +139,7 @@ export function RowActionMenu({
                 role="menuitem"
                 onClick={() => {
                   setOpen(false);
-                  if (action.kind === "close") setConfirmingClose(true);
+                  if (action.kind) setConfirmingKind(action.kind);
                 }}
                 className="block w-full px-3 py-2 text-left text-sm text-fg transition-colors duration-150 hover:bg-hover"
               >
@@ -147,14 +150,15 @@ export function RowActionMenu({
         </div>
       ) : null}
 
-      {confirmingClose ? (
+      {confirmingKind ? (
         <ConfirmDialog
-          title="Close this job?"
-          description="Closing the job will stop new applications and remove it from the public website. Existing applications will remain available."
-          confirmLabel="Close job"
-          isConfirming={isClosing}
-          onConfirm={handleConfirmClose}
-          onCancel={() => setConfirmingClose(false)}
+          title={jobLifecycleDialogCopy[confirmingKind].title}
+          description={jobLifecycleDialogCopy[confirmingKind].description}
+          confirmLabel={jobLifecycleDialogCopy[confirmingKind].confirmLabel}
+          destructive={jobLifecycleDialogCopy[confirmingKind].destructive}
+          isConfirming={isSubmitting}
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirmingKind(null)}
         />
       ) : null}
     </div>

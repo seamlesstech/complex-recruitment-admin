@@ -23,4 +23,5 @@ export type CreateEmployerResult =
   | { ok: true; employer: OptionItem }
   | { ok: false; error: string };
 
-export type CloseJobResult = { ok: true } | { ok: false; error: string };
+/** Shared by closeJob and reopenJob — both are simple status-transition results. */
+export type JobLifecycleResult = { ok: true } | { ok: false; error: string };

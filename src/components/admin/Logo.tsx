@@ -8,14 +8,14 @@ import Image from "next/image";
  */
 export function Logo() {
   return (
-    <div className="flex items-center gap-2 px-1">
+    <div className="flex items-center gap-2.5 px-1">
       <Image
         src="/complex-mark.png"
         alt=""
-        width={20}
-        height={20}
+        width={28}
+        height={28}
         priority
-        className="h-5 w-5 shrink-0 object-contain"
+        className="h-7 w-7 shrink-0 object-contain"
       />
       <div className="flex items-baseline gap-1.5">
         <span className="text-lg font-semibold tracking-tight text-white">

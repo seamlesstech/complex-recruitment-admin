@@ -10,8 +10,9 @@ import { EmploymentPaySection } from "./EmploymentPaySection";
 import { VacancyContentSection } from "./VacancyContentSection";
 import { ApplicationSettingsSection } from "./ApplicationSettingsSection";
 import { JobEditorSidebar } from "./JobEditorSidebar";
-import { closeJobAction, createJobAction, updateJobAction } from "@/lib/jobs/actions";
+import { closeJobAction, createJobAction, reopenJobAction, updateJobAction } from "@/lib/jobs/actions";
 import type { OptionItem } from "@/lib/jobs/types";
+import { jobLifecycleDialogCopy, type JobLifecycleKind } from "@/lib/jobs/lifecycle-copy";
 import {
   formatDateDisplay,
   type JobDraft,
@@ -72,8 +73,8 @@ export function JobEditor({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmingClose, setConfirmingClose] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+  const [confirmingLifecycle, setConfirmingLifecycle] = useState<JobLifecycleKind | null>(null);
+  const [isLifecycleSubmitting, setIsLifecycleSubmitting] = useState(false);
 
   const errors = showErrors ? validateDraft(draft) : {};
   const hasErrors = Object.keys(errors).length > 0;
@@ -118,18 +119,19 @@ export function JobEditor({
     router.refresh();
   }
 
-  async function handleConfirmClose() {
-    if (!jobId) return;
-    setIsClosing(true);
-    const result = await closeJobAction(jobId);
-    setIsClosing(false);
-    setConfirmingClose(false);
+  async function handleConfirmLifecycleAction() {
+    if (!jobId || !confirmingLifecycle) return;
+    setIsLifecycleSubmitting(true);
+    const result =
+      confirmingLifecycle === "close" ? await closeJobAction(jobId) : await reopenJobAction(jobId);
+    setIsLifecycleSubmitting(false);
+    setConfirmingLifecycle(null);
 
     if (!result.ok) {
       showToast("error", result.error);
       return;
     }
-    showToast("success", "Job closed.");
+    showToast("success", jobLifecycleDialogCopy[confirmingLifecycle].successMessage);
     router.refresh();
   }
 
@@ -241,18 +243,20 @@ export function JobEditor({
           onSaveDraft={handleSaveDraft}
           onCancel={handleCancel}
           isSubmitting={isSubmitting}
-          onCloseJob={() => setConfirmingClose(true)}
+          onCloseJob={() => setConfirmingLifecycle("close")}
+          onReopenJob={() => setConfirmingLifecycle("reopen")}
         />
       </div>
 
-      {confirmingClose ? (
+      {confirmingLifecycle ? (
         <ConfirmDialog
-          title="Close this job?"
-          description="Closing the job will stop new applications and remove it from the public website. Existing applications will remain available."
-          confirmLabel="Close job"
-          isConfirming={isClosing}
-          onConfirm={handleConfirmClose}
-          onCancel={() => setConfirmingClose(false)}
+          title={jobLifecycleDialogCopy[confirmingLifecycle].title}
+          description={jobLifecycleDialogCopy[confirmingLifecycle].description}
+          confirmLabel={jobLifecycleDialogCopy[confirmingLifecycle].confirmLabel}
+          destructive={jobLifecycleDialogCopy[confirmingLifecycle].destructive}
+          isConfirming={isLifecycleSubmitting}
+          onConfirm={handleConfirmLifecycleAction}
+          onCancel={() => setConfirmingLifecycle(null)}
         />
       ) : null}
     </div>
