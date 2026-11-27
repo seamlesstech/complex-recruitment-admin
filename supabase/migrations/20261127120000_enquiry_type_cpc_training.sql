@@ -1,0 +1,17 @@
+-- CPC Training becomes its own Enquiry type, shown as "CPC Training" in Admin.
+--
+--   enquiry_type: employer, candidate, general, partnership, cpc_training (new)
+--
+-- Additive only: the new value is appended after the existing ones, which are
+-- not renamed, removed or reordered, and no enquiries row is modified. Historic
+-- CPC Training enquiries keep type = general (their subject still reads
+-- "CPC Training enquiry (...)"); they are deliberately not migrated.
+--
+-- Nothing in this migration uses the new value, so it is safe inside the
+-- migration transaction (Postgres only forbids *using* a value added in the
+-- same transaction). `if not exists` makes a re-run a no-op.
+--
+-- Deploy order: apply this migration, then deploy Admin (which can display the
+-- value), then deploy the website (which starts writing it). Postgres cannot
+-- drop an enum value, so a rollback means leaving the value unused.
+alter type enquiry_type add value if not exists 'cpc_training';
