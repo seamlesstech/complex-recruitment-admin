@@ -32,6 +32,7 @@ export const enquiryTypeFromDb: Record<DbEnquiryType, EnquiryType> = {
   candidate: "Candidate",
   general: "General",
   partnership: "Partnership",
+  cpc_training: "CPC Training",
 };
 
 /** Triage order, derived from the maps so they can never drift from the DB enums. */

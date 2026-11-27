@@ -230,7 +230,12 @@ export interface Job {
  * distinct from Staff Request / Candidate / Application / Job — an enquiry
  * may later be converted into one of those records, but is not itself one.
  */
-export type EnquiryType = "Employer" | "Candidate" | "General" | "Partnership";
+export type EnquiryType =
+  | "Employer"
+  | "Candidate"
+  | "General"
+  | "Partnership"
+  | "CPC Training";
 
 export type EnquiryStatus =
   | "New"

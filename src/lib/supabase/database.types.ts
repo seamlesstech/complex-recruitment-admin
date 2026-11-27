@@ -1526,7 +1526,12 @@ export type Database = {
         | "inactive"
       employment_type: "temporary" | "permanent" | "contract"
       enquiry_status: "new" | "in_review" | "responded" | "converted" | "closed"
-      enquiry_type: "employer" | "candidate" | "general" | "partnership"
+      enquiry_type:
+        | "employer"
+        | "candidate"
+        | "general"
+        | "partnership"
+        | "cpc_training"
       job_status: "draft" | "open" | "closed"
       pay_type: "hourly" | "daily" | "annual_salary" | "negotiable"
       profile_role: "super_admin" | "admin_manager" | "recruiter" | "viewer"
@@ -1695,7 +1700,13 @@ export const Constants = {
       ],
       employment_type: ["temporary", "permanent", "contract"],
       enquiry_status: ["new", "in_review", "responded", "converted", "closed"],
-      enquiry_type: ["employer", "candidate", "general", "partnership"],
+      enquiry_type: [
+        "employer",
+        "candidate",
+        "general",
+        "partnership",
+        "cpc_training",
+      ],
       job_status: ["draft", "open", "closed"],
       pay_type: ["hourly", "daily", "annual_salary", "negotiable"],
       profile_role: ["super_admin", "admin_manager", "recruiter", "viewer"],
